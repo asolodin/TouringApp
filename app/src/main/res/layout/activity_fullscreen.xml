@@ -8,18 +8,6 @@
     android:theme="@style/ThemeOverlay.TouringApp.FullscreenContainer"
     tools:context=".FullscreenActivity">
 
-    <!--fragment xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:map="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
-        android:id="@+id/map"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
-        android:layout_width="match_parent"
-        android:layout_height="300dp"
-        tools:context=".MapsActivity"
-        android:layout_gravity="bottom"
-        /-->
-
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -27,7 +15,7 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="300dp"
+            android:layout_height="140dp"
             android:background="@drawable/border">
 
             <TextClock
@@ -38,9 +26,9 @@
                 app:fontFamily="@font/fussion"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/time"
                 android:textSize="20sp"
                 android:format12Hour="E, MMM d"
+                android:text="Mon, Jun 28"
                 android:gravity="start"
                 />
 
@@ -50,26 +38,12 @@
                 android:layout_height="wrap_content"
                 android:gravity="end"
                 android:fontFamily="@font/fussion"
+                android:text="10:28 AM"
                 app:fontFamily="@font/fussion"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toEndOf="@id/date"
                 app:layout_constraintEnd_toEndOf="parent"
                 android:textSize="20sp"
-                android:format24Hour="hh:mm:ss"
-                />
-
-            <TextView
-                android:id="@+id/temp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/fussion"
-                app:fontFamily="@font/fussion"
-                android:text="64°F"
-                android:gravity="end"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toEndOf="@id/time"
-                app:layout_constraintEnd_toEndOf="parent"
-                android:textSize="20sp"
+                android:format12Hour="hh:mm aa"
                 />
 
             <Space
@@ -86,10 +60,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/fussion"
+                android:text="00.0"
                 app:fontFamily="@font/fussion"
                 app:layout_constraintTop_toBottomOf="@id/spacer1"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/speed_units"
+                app:layout_constraintEnd_toEndOf="parent"
                 android:textSize="50sp"
                 />
             <TextView
@@ -99,12 +74,219 @@
                 android:fontFamily="@font/fussion"
                 app:fontFamily="@font/fussion"
                 android:text="mph"
-                app:layout_constraintTop_toBottomOf="@id/spacer1"
-                app:layout_constraintStart_toEndOf="@id/speed_units"
-                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_margin="6dp"
+                app:layout_constraintTop_toTopOf="@id/speed"
+                app:layout_constraintStart_toEndOf="@id/speed"
                 android:textSize="20sp"
                 />
+            <Space
+                android:id="@+id/spacer2"
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                app:layout_constraintTop_toBottomOf="@id/speed"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                />
+            <TextView
+                android:id="@+id/speed_avg_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="avg: "
+                app:layout_constraintTop_toBottomOf="@id/spacer2"
+                app:layout_constraintStart_toStartOf="parent"
+                android:textSize="20sp"
+                android:gravity="start"
+                />
+            <TextView
+                android:id="@+id/speed_avg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="12.5"
+                app:layout_constraintTop_toBottomOf="@id/spacer2"
+                app:layout_constraintStart_toEndOf="@id/speed_avg_label"
+                android:textSize="20sp"
+                android:gravity="start"
+                />
+            <TextView
+                android:id="@+id/speed_max_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="max: "
+                app:layout_constraintTop_toBottomOf="@id/spacer2"
+                app:layout_constraintEnd_toStartOf="@id/speed_max"
+                android:textSize="20sp"
+                android:gravity="end"
+                />
+            <TextView
+                android:id="@+id/speed_max"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="22.5"
+                app:layout_constraintTop_toBottomOf="@id/spacer2"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:textSize="20sp"
+                android:gravity="end"
+                />
+
         </androidx.constraintlayout.widget.ConstraintLayout>
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:background="@drawable/border">
+            <TextView
+                android:id="@+id/trip_distance_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="dist:    "
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                android:textSize="16sp"
+                android:gravity="end"
+                />
+            <TextView
+                android:id="@+id/trip_eta_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="eta:    "
+                app:layout_constraintTop_toBottomOf="@id/trip_time"
+                app:layout_constraintStart_toStartOf="parent"
+                android:textSize="16sp"
+                android:gravity="end"
+                />
+            <TextView
+                android:id="@+id/trip_distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="008.5"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toEndOf="@id/trip_distance_label"
+                android:textSize="20sp"
+                android:gravity="end"
+                />
+            <TextView
+                android:id="@+id/trip_of_distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text=" of "
+                app:layout_constraintStart_toEndOf="@id/trip_distance"
+                app:layout_constraintTop_toTopOf="@id/trip_time"
+                android:textSize="12sp"
+                android:gravity="end"
+                />
+            <TextView
+                android:id="@+id/trip_total_distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="076.5"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toEndOf="@id/trip_of_distance"
+                android:textSize="20sp"
+                android:gravity="end"
+                />
+            <TextView
+                android:id="@+id/trip_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="00:00"
+                app:layout_constraintTop_toBottomOf="@id/trip_distance"
+                app:layout_constraintStart_toStartOf="@id/trip_distance"
+                android:textSize="20sp"
+                android:gravity="end"
+                />
+
+            <TextView
+                android:id="@+id/trip_est_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="00:00"
+                app:layout_constraintTop_toBottomOf="@id/trip_distance"
+                app:layout_constraintStart_toStartOf="@id/trip_total_distance"
+                android:textSize="20sp"
+                android:gravity="end"
+                />
+
+            <TextView
+                android:id="@+id/trip_eta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="00:00 PM"
+                app:layout_constraintTop_toBottomOf="@id/trip_time"
+                app:layout_constraintStart_toStartOf="@id/trip_distance"
+                android:textSize="20sp"
+                android:gravity="end"
+                />
+            <SurfaceView
+                android:id="@+id/altitude_chart"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:background="@drawable/border"
+                />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="130dp"
+            android:background="@drawable/border">
+            <!--TextView
+                android:id="@+id/temp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text="64°F"
+                android:gravity="end"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toEndOf="@id/time"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:textSize="20sp"
+                /-->
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <LinearLayout
+            android:id="@+id/fullscreen_content_controls"
+            style="@style/Widget.Theme.TouringApp.ButtonBar.Fullscreen"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="bottom|center_horizontal"
+            android:orientation="vertical"
+            tools:ignore="UselessParent">
+
+            <FrameLayout
+                android:id="@+id/fullscreen_content"
+
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fitsSystemWindows="true">
+
+            </FrameLayout>
+        </LinearLayout>
     </LinearLayout>
 
     <androidx.fragment.app.FragmentContainerView xmlns:map="http://schemas.android.com/apk/res-auto"
@@ -115,7 +297,7 @@
         map:uiZoomControls="true"
         tools:context=".MapsFragment"
         android:layout_gravity="bottom"
-        />
+        tools:layout="@layout/fragment_maps" />
 
     <!-- The primary full-screen view. This can be replaced with whatever view
          is needed to present your content, e.g. VideoView, SurfaceView,
@@ -138,23 +320,5 @@
         android:layout_width="match_parent"
         android:layout_height="300dp"
         /-->
-
-    <FrameLayout
-        android:id="@+id/fullscreen_content"
-
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fitsSystemWindows="true">
-
-        <LinearLayout
-            android:id="@+id/fullscreen_content_controls"
-            style="@style/Widget.Theme.TouringApp.ButtonBar.Fullscreen"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="bottom|center_horizontal"
-            android:orientation="vertical"
-            tools:ignore="UselessParent">
-        </LinearLayout>
-    </FrameLayout>
 
 </FrameLayout>

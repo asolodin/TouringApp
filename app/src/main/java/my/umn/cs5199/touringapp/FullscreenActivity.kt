@@ -11,21 +11,71 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
-import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Polyline
+import com.google.android.gms.maps.model.PolylineOptions
 import my.umn.cs5199.touringapp.databinding.ActivityFullscreenBinding
+import java.text.SimpleDateFormat
+import java.util.*
 
+
+data class Position(
+    val loc: Location, val tripTime: Long, val tripDistance: Double,
+    val prevMaxSpeed: Double
+) {
+    val time = System.currentTimeMillis()
+    val maxSpeed = if (loc.speed > prevMaxSpeed) loc.speed * MPS_TO_MIPH else prevMaxSpeed
+
+    companion object {
+        //const val R = 3_950.0 //radius of earth in mi
+        //const val DEG_TO_RAD = Math.PI / 180
+        const val M_PER_MI = 1_609.344
+        const val MS_PER_HR = 1000.0 * 60 * 60
+        const val TRIP_TOTAL_DIST = 76.5
+        const val MPS_TO_MIPH = 2.2369362921
+        const val MIN_SPEED = 3.0
+    }
+
+    fun avgSpeed(): Double {
+        if (tripTime > 0) {
+            return tripDistance * MS_PER_HR / tripTime
+        }
+        return 0.0
+    }
+
+    fun distanceTo(otherLoc: Location): Double {
+        return loc.distanceTo(otherLoc) / M_PER_MI
+    }
+
+    /*
+fun distanceFrom(otherLoc: Location): Double {
+    return R * DEG_TO_RAD *
+            Math.sqrt(
+                Math.pow(
+                    Math.cos(otherLoc.latitude * DEG_TO_RAD) *
+                            (otherLoc.longitude - loc.longitude), 2.0
+                )
+                        + Math.pow(otherLoc.latitude - loc.latitude, 2.0)
+            )
+}
+*/
+    fun speed(other: Position): Double {
+        if (other.time > loc.time) {
+            return distanceTo(other.loc) * MS_PER_HR / (other.time - loc.time)
+        } else {
+            return 0.0
+        }
+    }
+}
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -43,6 +93,11 @@ class FullscreenActivity : AppCompatActivity() {
         Manifest.permission.ACCESS_FINE_LOCATION,
         //Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
     )
+
+    private var prevPosition: Position? = null
+    private val routePoints = mutableListOf<LatLng>()
+    val timeFormat = SimpleDateFormat("hh:mm")
+    val etaFormat = SimpleDateFormat("hh:mm aa")
 
     private lateinit var locationCallback: LocationCallback
 
@@ -166,15 +221,16 @@ class FullscreenActivity : AppCompatActivity() {
                     it.moveCamera(CameraUpdateFactory.zoomTo(20f))
                     it.isMyLocationEnabled = true
                     it.uiSettings.isCompassEnabled = true
-                    updateMap(location)
+                    updateView(location)
                 }
             }
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                updateMap(locationResult.lastLocation)
+                updateView(locationResult.lastLocation)
             }
         }
+        startLocationUpdates()
     }
 
     @SuppressLint("MissingPermission")
@@ -182,22 +238,91 @@ class FullscreenActivity : AppCompatActivity() {
         var locationRequest = LocationRequest.Builder(1000)
             .setMinUpdateDistanceMeters(10f).setGranularity(Granularity.GRANULARITY_FINE)
             .build()
-        fusedLocationClient.requestLocationUpdates(locationRequest,
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
             locationCallback,
-            Looper.getMainLooper())
+            Looper.getMainLooper()
+        )
     }
 
-    private fun updateMap(location: Location?) {
-        if (location != null) {
-            val mapFragment =
-                supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
-            mapFragment?.getMapAsync {
-                val latLng = LatLng(location.latitude, location.longitude)
-                it.addMarker(MarkerOptions().position(latLng))
-                it.moveCamera(CameraUpdateFactory.newLatLng(latLng))
-            }
-            binding.speed.text = location.speed.toString().subSequence(0, 3)
+    private fun updateView(location: Location?) {
+        if (location == null) {
+            Log.w("touringApp", "no location")
+            return
         }
+        binding.tripTotalDistance.text = String.format("%03.1f", Position.TRIP_TOTAL_DIST)
+        Log.d("touringApp", "location is: " + location)
+        val mapFragment =
+            supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
+        mapFragment?.getMapAsync {
+            val latLng = LatLng(location.latitude, location.longitude)
+            //it.addMarker(MarkerOptions().position(latLng))
+            it.moveCamera(CameraUpdateFactory.newLatLng(latLng))
+            it.uiSettings.isCompassEnabled = true
+            val mapPoint = LatLng(location.latitude, location.longitude)
+            routePoints.add(mapPoint)
+            val route: Polyline = it.addPolyline(PolylineOptions())
+            route.points = routePoints
+        }
+
+        var speed = 0.0
+        if (location.hasSpeed()) {
+            speed = location.speed * Position.MPS_TO_MIPH
+            Log.d("touringApp", "got speed: " + speed)
+        } else if (prevPosition != null) {
+            val tmp = Position(location, 0, 0.0, 0.0)
+            speed = (prevPosition!!.speed(tmp) * 100).toInt().toDouble() / 100
+            Log.d("touringApp", "calculated speed: " + speed)
+        }
+
+        binding.speed.text = String.format("%02.1f", speed)
+
+        if (speed < Position.MIN_SPEED) {
+            return
+        }
+
+        var newPosition: Position
+        var tmpPosition = prevPosition
+        if (tmpPosition != null) {
+            newPosition = Position(
+                location,
+                tmpPosition.tripTime +
+                        System.currentTimeMillis() - tmpPosition.time,
+                tmpPosition.tripDistance + tmpPosition.distanceTo(location),
+                tmpPosition.maxSpeed
+            )
+        } else {
+            newPosition = Position(location, 0, 0.0, 0.0)
+        }
+        val avgSpeed = newPosition.avgSpeed()
+        binding.speedAvg.text = String.format("%02.1f", avgSpeed)
+        binding.speedMax.text = String.format("%02.1f", newPosition.maxSpeed)
+        binding.tripDistance.text = String.format("%03.1f", newPosition.tripDistance)
+            .padStart(4, '0')
+
+        binding.tripTime.text = String.format(
+            "%02d:%02d",
+            (newPosition.tripTime / Position.MS_PER_HR).toInt(),
+            (newPosition.tripTime / (60 * 1000) % 60).toInt()
+        )
+
+        if (avgSpeed > 0) {
+            var tripEstTime = (Position.TRIP_TOTAL_DIST / avgSpeed * 60).toInt() //minutes
+            if (tripEstTime > 24 * 60) {
+                tripEstTime = 23 * 60 + 59
+            }
+            binding.tripEstTime.text = String.format(
+                "%02d:%02d",
+                tripEstTime / 60, tripEstTime % 60
+            )
+        }
+        val etaTime = System.currentTimeMillis() + (Position.TRIP_TOTAL_DIST -
+                newPosition.tripDistance) / speed * Position.MS_PER_HR
+        binding.tripEta.text = etaFormat.format(Date(etaTime.toLong()))
+
+        val canvas = binding.altitudeChart.holder.lockCanvas()
+
+        prevPosition = newPosition
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
@@ -265,5 +390,6 @@ class FullscreenActivity : AppCompatActivity() {
          * and a change of the status and navigation bar.
          */
         private const val UI_ANIMATION_DELAY = 300
+
     }
 }
