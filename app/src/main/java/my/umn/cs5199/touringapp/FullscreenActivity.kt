@@ -33,14 +33,12 @@ data class Position(
     val prevMaxSpeed: Double
 ) {
     val time = System.currentTimeMillis()
-    val maxSpeed = if (loc.speed > prevMaxSpeed) loc.speed * MPS_TO_MIPH else prevMaxSpeed
+    val maxSpeed = if (loc.speed * MPS_TO_MIPH > prevMaxSpeed) loc.speed * MPS_TO_MIPH else prevMaxSpeed
 
     companion object {
-        //const val R = 3_950.0 //radius of earth in mi
-        //const val DEG_TO_RAD = Math.PI / 180
         const val M_PER_MI = 1_609.344
         const val MS_PER_HR = 1000.0 * 60 * 60
-        const val TRIP_TOTAL_DIST = 76.5
+        const val TRIP_TOTAL_DIST = 24.5
         const val MPS_TO_MIPH = 2.2369362921
         const val MIN_SPEED = 3.0
     }
@@ -56,18 +54,6 @@ data class Position(
         return loc.distanceTo(otherLoc) / M_PER_MI
     }
 
-    /*
-fun distanceFrom(otherLoc: Location): Double {
-    return R * DEG_TO_RAD *
-            Math.sqrt(
-                Math.pow(
-                    Math.cos(otherLoc.latitude * DEG_TO_RAD) *
-                            (otherLoc.longitude - loc.longitude), 2.0
-                )
-                        + Math.pow(otherLoc.latitude - loc.latitude, 2.0)
-            )
-}
-*/
     fun speed(other: Position): Double {
         if (other.time > loc.time) {
             return distanceTo(other.loc) * MS_PER_HR / (other.time - loc.time)
@@ -94,6 +80,7 @@ class FullscreenActivity : AppCompatActivity() {
         //Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
     )
 
+    private var firstPosition : Position? = null
     private var prevPosition: Position? = null
     private val routePoints = mutableListOf<LatLng>()
     val timeFormat = SimpleDateFormat("hh:mm")
@@ -218,7 +205,7 @@ class FullscreenActivity : AppCompatActivity() {
                 val mapFragment =
                     supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
                 mapFragment?.getMapAsync {
-                    it.moveCamera(CameraUpdateFactory.zoomTo(20f))
+                    it.moveCamera(CameraUpdateFactory.zoomTo(19f))
                     it.isMyLocationEnabled = true
                     it.uiSettings.isCompassEnabled = true
                     updateView(location)
@@ -250,7 +237,6 @@ class FullscreenActivity : AppCompatActivity() {
             Log.w("touringApp", "no location")
             return
         }
-        binding.tripTotalDistance.text = String.format("%03.1f", Position.TRIP_TOTAL_DIST)
         Log.d("touringApp", "location is: " + location)
         val mapFragment =
             supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
@@ -258,7 +244,6 @@ class FullscreenActivity : AppCompatActivity() {
             val latLng = LatLng(location.latitude, location.longitude)
             //it.addMarker(MarkerOptions().position(latLng))
             it.moveCamera(CameraUpdateFactory.newLatLng(latLng))
-            it.uiSettings.isCompassEnabled = true
             val mapPoint = LatLng(location.latitude, location.longitude)
             routePoints.add(mapPoint)
             val route: Polyline = it.addPolyline(PolylineOptions())
@@ -293,12 +278,18 @@ class FullscreenActivity : AppCompatActivity() {
             )
         } else {
             newPosition = Position(location, 0, 0.0, 0.0)
+            firstPosition = newPosition
         }
+
+        Log.d("touringApp","new position: " + newPosition)
+
         val avgSpeed = newPosition.avgSpeed()
         binding.speedAvg.text = String.format("%02.1f", avgSpeed)
         binding.speedMax.text = String.format("%02.1f", newPosition.maxSpeed)
         binding.tripDistance.text = String.format("%03.1f", newPosition.tripDistance)
-            .padStart(4, '0')
+            .padStart(5, '0')
+        binding.tripTotalDistance.text = String.format("%03.1f", Position.TRIP_TOTAL_DIST)
+            .padStart(5, '0')
 
         binding.tripTime.text = String.format(
             "%02d:%02d",
@@ -316,11 +307,18 @@ class FullscreenActivity : AppCompatActivity() {
                 tripEstTime / 60, tripEstTime % 60
             )
         }
-        val etaTime = System.currentTimeMillis() + (Position.TRIP_TOTAL_DIST -
-                newPosition.tripDistance) / speed * Position.MS_PER_HR
-        binding.tripEta.text = etaFormat.format(Date(etaTime.toLong()))
-
-        val canvas = binding.altitudeChart.holder.lockCanvas()
+        if (prevPosition != null && firstPosition != null) {
+            val etaSpeed = newPosition.tripDistance * Position.MS_PER_HR /
+                    (newPosition.time - firstPosition!!.time)
+            val remainingDistance = Position.TRIP_TOTAL_DIST - newPosition.tripDistance
+            val remainingTime = remainingDistance / etaSpeed
+            val etaTime = newPosition.time + (remainingTime * Position.MS_PER_HR)
+            Log.d("touringApp", "etaSpeed: " + etaSpeed + ", remDist: " +
+            remainingDistance + ", remTime: " + remainingTime)
+            binding.tripEta.text = etaFormat.format(Date(etaTime.toLong()))
+        98}
+7
+        //val canvas = binding.altitudeChart.holder.lockCanvas()
 
         prevPosition = newPosition
     }
@@ -390,6 +388,5 @@ class FullscreenActivity : AppCompatActivity() {
          * and a change of the status and navigation bar.
          */
         private const val UI_ANIMATION_DELAY = 300
-
     }
 }

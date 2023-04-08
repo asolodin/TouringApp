@@ -30,6 +30,7 @@
                 android:format12Hour="E, MMM d"
                 android:text="Mon, Jun 28"
                 android:gravity="start"
+                android:textColor="#000000"
                 />
 
             <TextClock
@@ -44,6 +45,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 android:textSize="20sp"
                 android:format12Hour="hh:mm aa"
+                android:textColor="#000000"
                 />
 
             <Space
@@ -66,6 +68,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 android:textSize="50sp"
+                android:textColor="#000000"
                 />
             <TextView
                 android:id="@+id/speed_units"
@@ -78,6 +81,7 @@
                 app:layout_constraintTop_toTopOf="@id/speed"
                 app:layout_constraintStart_toEndOf="@id/speed"
                 android:textSize="20sp"
+                android:textColor="#000000"
                 />
             <Space
                 android:id="@+id/spacer2"
@@ -98,6 +102,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 android:textSize="20sp"
                 android:gravity="start"
+                android:textColor="#000000"
                 />
             <TextView
                 android:id="@+id/speed_avg"
@@ -110,6 +115,7 @@
                 app:layout_constraintStart_toEndOf="@id/speed_avg_label"
                 android:textSize="20sp"
                 android:gravity="start"
+                android:textColor="#000000"
                 />
             <TextView
                 android:id="@+id/speed_max_label"
@@ -122,6 +128,8 @@
                 app:layout_constraintEnd_toStartOf="@id/speed_max"
                 android:textSize="20sp"
                 android:gravity="end"
+                android:textColor="#000000"
+
                 />
             <TextView
                 android:id="@+id/speed_max"
@@ -134,6 +142,8 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 android:textSize="20sp"
                 android:gravity="end"
+                android:textColor="#000000"
+
                 />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -152,6 +162,8 @@
                 app:layout_constraintStart_toStartOf="parent"
                 android:textSize="16sp"
                 android:gravity="end"
+                android:textColor="#000000"
+
                 />
             <TextView
                 android:id="@+id/trip_eta_label"
@@ -164,6 +176,8 @@
                 app:layout_constraintStart_toStartOf="parent"
                 android:textSize="16sp"
                 android:gravity="end"
+                android:textColor="#000000"
+
                 />
             <TextView
                 android:id="@+id/trip_distance"
@@ -176,6 +190,8 @@
                 app:layout_constraintStart_toEndOf="@id/trip_distance_label"
                 android:textSize="20sp"
                 android:gravity="end"
+                android:textColor="#000000"
+
                 />
             <TextView
                 android:id="@+id/trip_of_distance"
@@ -185,9 +201,10 @@
                 app:fontFamily="@font/fussion"
                 android:text=" of "
                 app:layout_constraintStart_toEndOf="@id/trip_distance"
-                app:layout_constraintTop_toTopOf="@id/trip_time"
+                app:layout_constraintBottom_toBottomOf="@id/trip_distance"
                 android:textSize="12sp"
                 android:gravity="end"
+                android:textColor="#000000"
                 />
             <TextView
                 android:id="@+id/trip_total_distance"
@@ -200,6 +217,8 @@
                 app:layout_constraintStart_toEndOf="@id/trip_of_distance"
                 android:textSize="20sp"
                 android:gravity="end"
+                android:textColor="#000000"
+
                 />
             <TextView
                 android:id="@+id/trip_time"
@@ -212,8 +231,22 @@
                 app:layout_constraintStart_toStartOf="@id/trip_distance"
                 android:textSize="20sp"
                 android:gravity="end"
-                />
+                android:textColor="#000000"
 
+                />
+            <TextView
+                android:id="@+id/trip_of_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fussion"
+                app:fontFamily="@font/fussion"
+                android:text=" of "
+                app:layout_constraintStart_toEndOf="@id/trip_time"
+                app:layout_constraintBottom_toBottomOf="@id/trip_time"
+                android:textSize="12sp"
+                android:gravity="end"
+                android:textColor="#000000"
+                />
             <TextView
                 android:id="@+id/trip_est_time"
                 android:layout_width="wrap_content"
@@ -225,6 +258,8 @@
                 app:layout_constraintStart_toStartOf="@id/trip_total_distance"
                 android:textSize="20sp"
                 android:gravity="end"
+                android:textColor="#000000"
+
                 />
 
             <TextView
@@ -238,6 +273,8 @@
                 app:layout_constraintStart_toStartOf="@id/trip_distance"
                 android:textSize="20sp"
                 android:gravity="end"
+                android:textColor="#000000"
+
                 />
             <SurfaceView
                 android:id="@+id/altitude_chart"
