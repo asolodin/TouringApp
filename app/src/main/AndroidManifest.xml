@@ -14,10 +14,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TouringApp"
         tools:targetApi="31">
-        <service
+        <!--service
             android:name=".LocationService"
             android:enabled="true"
-            android:exported="false"></service>
+            android:exported="false"></service-->
         <!--
              TODO: Before you run your application, you need a Google Maps API key.
 

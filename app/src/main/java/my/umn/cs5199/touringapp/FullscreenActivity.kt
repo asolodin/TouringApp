@@ -3,7 +3,6 @@ package my.umn.cs5199.touringapp
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.location.Location
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -17,51 +16,19 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
+import kotlinx.coroutines.launch
 import my.umn.cs5199.touringapp.databinding.ActivityFullscreenBinding
 import java.text.SimpleDateFormat
 import java.util.*
-
-
-data class Position(
-    val loc: Location, val tripTime: Long, val tripDistance: Double,
-    val prevMaxSpeed: Double
-) {
-    val time = System.currentTimeMillis()
-    val maxSpeed = if (loc.speed * MPS_TO_MIPH > prevMaxSpeed) loc.speed * MPS_TO_MIPH else prevMaxSpeed
-
-    companion object {
-        const val M_PER_MI = 1_609.344
-        const val MS_PER_HR = 1000.0 * 60 * 60
-        const val TRIP_TOTAL_DIST = 24.5
-        const val MPS_TO_MIPH = 2.2369362921
-        const val MIN_SPEED = 3.0
-    }
-
-    fun avgSpeed(): Double {
-        if (tripTime > 0) {
-            return tripDistance * MS_PER_HR / tripTime
-        }
-        return 0.0
-    }
-
-    fun distanceTo(otherLoc: Location): Double {
-        return loc.distanceTo(otherLoc) / M_PER_MI
-    }
-
-    fun speed(other: Position): Double {
-        if (other.time > loc.time) {
-            return distanceTo(other.loc) * MS_PER_HR / (other.time - loc.time)
-        } else {
-            return 0.0
-        }
-    }
-}
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -73,20 +40,15 @@ class FullscreenActivity : AppCompatActivity() {
     private lateinit var fullscreenContent: TextView
     private lateinit var fullscreenContentControls: LinearLayout
     private val hideHandler = Handler(Looper.myLooper()!!)
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val permissions = arrayOf(
         //Manifest.permission.FOREGROUND_SERVICE,
         Manifest.permission.ACCESS_FINE_LOCATION,
+        //Manifest.permission.ACCESS_BACKGROUND_LOCATION
         //Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
     )
-
-    private var firstPosition : Position? = null
-    private var prevPosition: Position? = null
-    private val routePoints = mutableListOf<LatLng>()
     val timeFormat = SimpleDateFormat("hh:mm")
     val etaFormat = SimpleDateFormat("hh:mm aa")
-
-    private lateinit var locationCallback: LocationCallback
+    private val conversion = Conversion(DistanceUnit.MI)
 
     private fun askPermissions(multiplePermissionLauncher: ActivityResultLauncher<Array<String>>) {
         if (!hasPermissions(permissions)) {
@@ -176,7 +138,6 @@ class FullscreenActivity : AppCompatActivity() {
         //webview.getSettings().setJavaScriptEnabled(true)
         //webview.loadUrl("https://maps.google.com/maps?" + "saddr=43.0054446,-87.9678884" + "&daddr=42.9257104,-88.0508355")
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         val multiplePermissionsContract = ActivityResultContracts.RequestMultiplePermissions()
         val multiplePermissionLauncher =
@@ -200,127 +161,50 @@ class FullscreenActivity : AppCompatActivity() {
         ) {
             askPermissions(multiplePermissionLauncher)
         }
-        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
-            .addOnSuccessListener { location: Location? ->
-                val mapFragment =
-                    supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
-                mapFragment?.getMapAsync {
-                    it.moveCamera(CameraUpdateFactory.zoomTo(19f))
-                    it.isMyLocationEnabled = true
-                    it.uiSettings.isCompassEnabled = true
-                    updateView(location)
+
+        val viewModel: LocationViewModel by lazy {
+            ViewModelProvider(this).get(LocationViewModel::class.java)
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect {
+                    updateView(it)
                 }
             }
-
-        locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                updateView(locationResult.lastLocation)
-            }
         }
-        startLocationUpdates()
     }
 
     @SuppressLint("MissingPermission")
-    private fun startLocationUpdates() {
-        var locationRequest = LocationRequest.Builder(1000)
-            .setMinUpdateDistanceMeters(10f).setGranularity(Granularity.GRANULARITY_FINE)
-            .build()
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback,
-            Looper.getMainLooper()
-        )
-    }
-
-    private fun updateView(location: Location?) {
-        if (location == null) {
-            Log.w("touringApp", "no location")
-            return
-        }
-        Log.d("touringApp", "location is: " + location)
+    private fun updateView(state: LocationState) {
         val mapFragment =
             supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
         mapFragment?.getMapAsync {
-            val latLng = LatLng(location.latitude, location.longitude)
-            //it.addMarker(MarkerOptions().position(latLng))
-            it.moveCamera(CameraUpdateFactory.newLatLng(latLng))
-            val mapPoint = LatLng(location.latitude, location.longitude)
-            routePoints.add(mapPoint)
+            it.moveCamera(CameraUpdateFactory.zoomTo(19f))
+            it.isMyLocationEnabled = true
+            it.uiSettings.isCompassEnabled = true
+            it.moveCamera(CameraUpdateFactory.newLatLng(state.position.asLatLng()))
             val route: Polyline = it.addPolyline(PolylineOptions())
-            route.points = routePoints
+            route.points = state.routePoints
         }
 
-        var speed = 0.0
-        if (location.hasSpeed()) {
-            speed = location.speed * Position.MPS_TO_MIPH
-            Log.d("touringApp", "got speed: " + speed)
-        } else if (prevPosition != null) {
-            val tmp = Position(location, 0, 0.0, 0.0)
-            speed = (prevPosition!!.speed(tmp) * 100).toInt().toDouble() / 100
-            Log.d("touringApp", "calculated speed: " + speed)
-        }
-
-        binding.speed.text = String.format("%02.1f", speed)
-
-        if (speed < Position.MIN_SPEED) {
-            return
-        }
-
-        var newPosition: Position
-        var tmpPosition = prevPosition
-        if (tmpPosition != null) {
-            newPosition = Position(
-                location,
-                tmpPosition.tripTime +
-                        System.currentTimeMillis() - tmpPosition.time,
-                tmpPosition.tripDistance + tmpPosition.distanceTo(location),
-                tmpPosition.maxSpeed
-            )
-        } else {
-            newPosition = Position(location, 0, 0.0, 0.0)
-            firstPosition = newPosition
-        }
-
-        Log.d("touringApp","new position: " + newPosition)
-
-        val avgSpeed = newPosition.avgSpeed()
-        binding.speedAvg.text = String.format("%02.1f", avgSpeed)
-        binding.speedMax.text = String.format("%02.1f", newPosition.maxSpeed)
-        binding.tripDistance.text = String.format("%03.1f", newPosition.tripDistance)
+        binding.speed.text = String.format("%02.1f", conversion.speed(state.position.speed()))
+        binding.speedAvg.text = String.format("%02.1f", conversion.speed(state.avgSpeed()))
+        binding.speedMax.text = String.format("%02.1f", conversion.speed(state.maxSpeed))
+        binding.tripDistance.text = String.format("%03.1f", conversion.distance(state.tripDistance))
             .padStart(5, '0')
-        binding.tripTotalDistance.text = String.format("%03.1f", Position.TRIP_TOTAL_DIST)
+        binding.tripTotalDistance.text = String.format(
+            "%03.1f", conversion.distance(
+                state.totalDistance
+            )
+        )
             .padStart(5, '0')
 
         binding.tripTime.text = String.format(
             "%02d:%02d",
-            (newPosition.tripTime / Position.MS_PER_HR).toInt(),
-            (newPosition.tripTime / (60 * 1000) % 60).toInt()
+            conversion.hours(state.tripElapsedTime),
+            conversion.minutes(state.tripElapsedTime)
         )
-
-        if (avgSpeed > 0) {
-            var tripEstTime = (Position.TRIP_TOTAL_DIST / avgSpeed * 60).toInt() //minutes
-            if (tripEstTime > 24 * 60) {
-                tripEstTime = 23 * 60 + 59
-            }
-            binding.tripEstTime.text = String.format(
-                "%02d:%02d",
-                tripEstTime / 60, tripEstTime % 60
-            )
-        }
-        if (prevPosition != null && firstPosition != null) {
-            val etaSpeed = newPosition.tripDistance * Position.MS_PER_HR /
-                    (newPosition.time - firstPosition!!.time)
-            val remainingDistance = Position.TRIP_TOTAL_DIST - newPosition.tripDistance
-            val remainingTime = remainingDistance / etaSpeed
-            val etaTime = newPosition.time + (remainingTime * Position.MS_PER_HR)
-            Log.d("touringApp", "etaSpeed: " + etaSpeed + ", remDist: " +
-            remainingDistance + ", remTime: " + remainingTime)
-            binding.tripEta.text = etaFormat.format(Date(etaTime.toLong()))
-        98}
-7
-        //val canvas = binding.altitudeChart.holder.lockCanvas()
-
-        prevPosition = newPosition
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
