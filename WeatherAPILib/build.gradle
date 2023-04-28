@@ -1,0 +1,40 @@
+apply plugin: 'com.android.library'
+apply plugin: "de.mannodermaus.android-junit5"
+
+def Properties properties = new Properties()
+properties.load(project.rootProject.file("local.properties").newDataInputStream())
+
+android {
+    namespace 'com.weatherapi.api'
+    compileSdk 33
+
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 31
+        versionCode 1
+        versionName "1.0.0"
+        resValue "string", "WEATHER_API_KEY", properties.getProperty("API_KEY", "")
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    lintOptions {
+        abortOnError false
+    }
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+dependencies {
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.2'
+
+    api 'joda-time:joda-time:2.12.5'
+    //implementation 'org.apache.httpcomponents:httpcore:4.5.14'
+    //implementation 'org.apache.httpcomponents:httpmime:4.5.14'
+    //testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.9.2'
+    testImplementation ('org.junit.jupiter:junit-jupiter:5.9.2')
+}

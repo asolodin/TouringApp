@@ -2,6 +2,7 @@ package my.umn.cs5199.touringapp
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
@@ -30,6 +31,7 @@ import my.umn.cs5199.touringapp.databinding.ActivityFullscreenBinding
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
@@ -46,8 +48,7 @@ class FullscreenActivity : AppCompatActivity() {
         //Manifest.permission.ACCESS_BACKGROUND_LOCATION
         //Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
     )
-    val timeFormat = SimpleDateFormat("hh:mm")
-    val etaFormat = SimpleDateFormat("hh:mm aa")
+    val etaFormat = SimpleDateFormat("hh:mma")
     private val conversion = Conversion(DistanceUnit.MI)
 
     private fun askPermissions(multiplePermissionLauncher: ActivityResultLauncher<Array<String>>) {
@@ -62,22 +63,20 @@ class FullscreenActivity : AppCompatActivity() {
         }
     }
 
-    private fun hasPermissions(permissions: Array<String>?): Boolean {
-        if (permissions != null) {
-            for (permission in permissions) {
-                if (ActivityCompat.checkSelfPermission(
-                        this,
-                        permission
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    Log.d("PERMISSIONS", "Permission is not granted: $permission")
-                    return false
-                }
-                Log.d("PERMISSIONS", "Permission already granted: $permission")
+    private fun hasPermissions(permissions: Array<String>): Boolean {
+        for (permission in permissions) {
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    permission
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                Log.d("PERMISSIONS", "Permission is not granted: $permission")
+                return false
             }
-            return true
+            Log.d("PERMISSIONS", "Permission already granted: $permission")
         }
-        return false
+        return true
+
     }
 
     @SuppressLint("InlinedApi")
@@ -166,6 +165,13 @@ class FullscreenActivity : AppCompatActivity() {
             ViewModelProvider(this).get(LocationViewModel::class.java)
         }
 
+        viewModel.initialize(this.applicationContext)
+
+        binding.tripStop.setOnClickListener {
+            //TODO: save trip data
+            startActivity(Intent(this, MainActivity::class.java))
+        }
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect {
@@ -188,7 +194,7 @@ class FullscreenActivity : AppCompatActivity() {
             route.points = state.routePoints
         }
 
-        binding.speed.text = String.format("%02.1f", conversion.speed(state.position.speed()))
+        binding.speed.text = String.format("%02.1f", conversion.speed(state.position.speed))
         binding.speedAvg.text = String.format("%02.1f", conversion.speed(state.avgSpeed()))
         binding.speedMax.text = String.format("%02.1f", conversion.speed(state.maxSpeed))
         binding.tripDistance.text = String.format("%03.1f", conversion.distance(state.tripDistance))
@@ -205,6 +211,34 @@ class FullscreenActivity : AppCompatActivity() {
             conversion.hours(state.tripElapsedTime),
             conversion.minutes(state.tripElapsedTime)
         )
+        if (state.tripStartTime > 0 && state.tripDistance > 0) {
+            val now = System.currentTimeMillis() / 1000 // to s
+            binding.tripStart.text = etaFormat.format(Date(state.tripStartTime * 1000))
+                .dropLast(1)
+            val remDist = state.totalDistance - state.tripDistance
+
+            if (remDist > 0) {
+                if (state.avgSpeed() > 0) {
+                    val tripEstTime = (remDist / state.avgSpeed()).toLong()
+                    binding.tripEstTime.text = String.format(
+                        "%02d:%02d",
+                        conversion.hours(tripEstTime),
+                        conversion.minutes(tripEstTime))
+                }
+                val overalSpeed = state.tripDistance / (now - state.tripStartTime)
+                val remainTime = (remDist / overalSpeed).toLong()
+                val remainHrs = conversion.hours(remainTime)
+
+                if (remainHrs < 24) {
+                    val etaTime = System.currentTimeMillis() + remainTime * 1000
+                    //Log.d("touringApp", "etaSpeed: " + etaSpeed + ", remDist: " +
+                    //        remainingDistance + ", remTime: " + remainingTime)
+                    binding.tripEta.text = etaFormat.format(Date(etaTime.toLong())).dropLast(1)
+                } else {
+                    binding.tripEta.text = "00:00a"
+                }
+            }
+        }
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {

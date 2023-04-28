@@ -1,14 +1,10 @@
 package my.umn.cs5199.touringapp
 
 import android.annotation.SuppressLint
-import android.app.job.JobParameters
-import android.app.job.JobScheduler
-import android.app.job.JobService
 import android.content.Context
 import android.location.Location
 import android.os.Looper
 import android.util.Log
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.ViewModel
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
@@ -23,9 +19,10 @@ enum class DistanceUnit(val factor: Double) {
 }
 
 data class Position(
-    val loc: Location
+    val loc: Location,
+    val speed : Double = loc.speed.toDouble()
 ) {
-    val time = loc.time
+    val time = loc.time / 1000
 
     fun asLatLng(): LatLng {
         return LatLng(loc.latitude, loc.longitude)
@@ -48,36 +45,29 @@ data class Position(
             }
         }
     */
-    fun speed(): Double {
+    /*fun speed(): Double {
         if (loc.hasSpeed()) {
             return loc.speed.toDouble()
         }
         return 0.0
-    }
+    }*/
 }
 
 data class LocationState(
+    //all distances in meters, all time in seconds
     val position: Position,
     val routePoints: List<LatLng>,
     val tripStartTime: Long,
     val tripElapsedTime: Long,
     val tripDistance: Double,
-    val prevMaxSpeed: Double,
-    val totalDistance: Double,
-    val etaTime: Long
-) {
-    val maxSpeed = if (conversion.speed(position.speed()) > prevMaxSpeed)
-        conversion.speed(position.speed()) else prevMaxSpeed
+    val maxSpeed: Double,
+    val totalDistance: Double) {
 
     fun avgSpeed(): Double {
         if (tripElapsedTime > 0) {
             return tripDistance / tripElapsedTime
         }
         return 0.0
-    }
-
-    companion object {
-        val conversion = Conversion(DistanceUnit.MI)
     }
 }
 
@@ -86,7 +76,7 @@ class Conversion(val unit: DistanceUnit) {
     fun speed(metersPerSecond: Double): Double {
         return when (unit) {
             DistanceUnit.MI -> metersPerSecond * MPS_TO_MIPH
-            DistanceUnit.KM -> metersPerSecond * MPS_TO_KPH
+            DistanceUnit.KM -> metersPerSecond * MPS_TO_KMPH
             //else -> throw IllegalArgumentException("unsupported")
         }
     }
@@ -95,29 +85,28 @@ class Conversion(val unit: DistanceUnit) {
         return meters / unit.factor
     }
 
-    fun hours(timeMs: Long): Long {
-        return timeMs / MS_PER_HR
+    fun hours(seconds: Long): Long {
+        return seconds / S_PER_HR
     }
 
-    fun minutes(timeMs: Long): Long {
-        return timeMs / (60 * 1000) % 60
+    fun minutes(seconds: Long): Long {
+        return seconds / 60 % 60
     }
 
     companion object {
-        const val M_PER_MI = 1_609.344
-        const val MS_PER_HR = 1000 * 60 * 60
-        const val MPS_TO_MIPH = 2.2369362921
-        const val MPS_TO_KPH = 3.6
+        const val S_PER_HR = 60 * 60
+        const val MPS_TO_MIPH = 2.2369363
+        const val MPS_TO_KMPH = 3.6
     }
 }
 
 class LocationViewModel : ViewModel() {
 
     private var firstPosition: Position? = null
-    var prevPosition: Position? = null
     var position: Position? = null
     private val routePoints = mutableListOf<LatLng>()
     private val timer = Timer()
+    private var initialized : Boolean = false
 
     private val _uiState = MutableStateFlow(
         LocationState(
@@ -127,8 +116,7 @@ class LocationViewModel : ViewModel() {
             0,
             0.0,
             0.0,
-            10460.0,
-            0
+            10460.0
         )
     )
     val uiState: StateFlow<LocationState> = _uiState.asStateFlow()
@@ -136,17 +124,21 @@ class LocationViewModel : ViewModel() {
     private lateinit var locationCallback: LocationCallback
 
     companion object {
-        const val MIN_SPEED = 3.0
+        const val MIN_SPEED = 1.35 // ~3 mph
         const val TRIP_TOTAL_DIST = 7.1
     }
 
     fun initialize(context: Context) {
+        if (initialized) return
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 updateLocation(locationResult.lastLocation)
             }
         }
+        scheduleUpdateJob()
+        startLocationUpdates()
+        initialized = true
     }
 
     @SuppressLint("MissingPermission")
@@ -166,7 +158,6 @@ class LocationViewModel : ViewModel() {
         if (location == null) {
             return
         }
-        prevPosition = position
         position = Position(location)
     }
 
@@ -243,38 +234,67 @@ class LocationViewModel : ViewModel() {
         prevPosition = newPosition
     }*/
 
-    private fun scheduleUpdateJob(context: Context) {
-        timer.schedule(StateUpdateTask(), 0, 100)
+    private fun scheduleUpdateJob() {
+        timer.schedule(StateUpdateTask(), 2000, 1000)
     }
 
     inner class StateUpdateTask : TimerTask() {
 
-        override fun run() {
-            val newPosition = position ?: return
-            val prevPosition = prevPosition
+        var prevPosition: Position? = null
 
-            val tripPaused = newPosition.speed() < MIN_SPEED
+        override fun run() {
+            val currentPosition = position ?: return
+            val prevPosition = prevPosition
             val tripStarted = firstPosition != null
 
-            if (!tripPaused) {
-                if (!tripStarted) {
-                    firstPosition = newPosition
+            if (!tripStarted) {
+                if (currentPosition.speed >= MIN_SPEED) {
+                    firstPosition = position
+                    Log.d("touringApp.tripStarted", "trip is auto-started")
                 }
-                routePoints.add(newPosition.asLatLng())
             }
 
-            val time = System.currentTimeMillis()
-            val tripStartTime = if (tripStarted) firstPosition!!.time else 0
-            val tripTimeDelta = if (prevPosition != null) newPosition.time - prevPosition.time else 0
+            val tripPaused = tripStarted && currentPosition.speed < MIN_SPEED &&
+                    prevPosition!!.speed  < MIN_SPEED
+            if (tripPaused) {
+                return tripPaused()
+            }
 
-            _uiState.update { currentState ->
-                currentState.copy(
-                    position = newPosition,
-                    routePoints = routePoints,
-                    tripStartTime = tripStartTime,
-                    tripElapsedTime = currentState.tripElapsedTime + tripTimeDelta
-                )
+            if (currentPosition != prevPosition) {
+                routePoints.add(currentPosition.asLatLng())
+
+
+                val tripStartTime = if (tripStarted) firstPosition!!.time else 0
+                val timeDelta =
+                    if (prevPosition != null) currentPosition.time - prevPosition.time else 0
+                val distDelta =
+                    if (prevPosition != null) currentPosition.distanceTo(prevPosition) else 0.0
+                val maxSpeed = if (prevPosition != null) Math.max(
+                    currentPosition.speed,
+                    prevPosition.speed
+                ) else
+                    currentPosition.speed
+
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        position = currentPosition,
+                        routePoints = routePoints,
+                        tripStartTime = tripStartTime,
+                        tripElapsedTime = currentState.tripElapsedTime + timeDelta,
+                        tripDistance = currentState.tripDistance + distDelta,
+                        maxSpeed = maxSpeed
+                    )
+                }
+                StateUpdateTask@ this.prevPosition = currentPosition
             }
         }
+
+        private fun tripPaused() {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    position = currentState.position.copy(speed = 0.0)
+                )
+            }
+         }
     }
 }

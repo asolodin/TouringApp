@@ -25,4 +25,13 @@
         <item name="fullscreenBackgroundColor">@color/light_grey</item>
         <item name="fullscreenTextColor">@color/light_blue_A200</item>
     </style>
+
+    <style name="Theme.TouringApp.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.TouringApp.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="Theme.TouringApp.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 </resources>

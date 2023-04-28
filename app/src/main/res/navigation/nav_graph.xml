@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/TripSelection">
+
+    <fragment
+        android:id="@+id/TripSelection"
+        android:name="my.umn.cs5199.touringapp.FirstFragment"
+        android:label="@string/first_fragment_label"
+        tools:layout="@layout/fragment_first">
+
+        <action
+            android:id="@+id/action_TripSelection_to_TripPlanningFragment"
+            app:destination="@id/TripPlanning" />
+        <action
+            android:id="@+id/action_TripSelection_to_RideDashboard"
+            app:destination="@id/FullScreen" />
+    </fragment>
+    <fragment
+        android:id="@+id/TripPlanning"
+        android:name="my.umn.cs5199.touringapp.SecondFragment"
+        android:label="@string/second_fragment_label"
+        tools:layout="@layout/fragment_second">
+
+        <action
+            android:id="@+id/action_TripPlanning_to_TripSelection"
+            app:destination="@id/TripSelection" />
+    </fragment>
+    <activity
+        android:id="@+id/FullScreen"
+        android:name="my.umn.cs5199.touringapp.FullscreenActivity"
+        android:label="Ride Dashboard"
+        tools:layout="@layout/fragment_second">
+    </activity>
+</navigation>
