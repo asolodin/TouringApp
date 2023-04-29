@@ -6,16 +6,37 @@
     android:layout_height="match_parent"
     tools:context=".SecondFragment">
 
-    <TextView
-        android:id="@+id/textview_second"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toTopOf="@id/button_second"
+    <LinearLayout
+        android:id="@+id/tip_header"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:background="@drawable/border_semi_background"
+        android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        >
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingStart="10dp"
+            >
+            <com.google.android.material.textfield.TextInputEditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="trip name"
+                android:textSize="11sp"
+                app:fontFamily="@font/fussion"
+                android:fontFamily="@font/fussion"
+                />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <Button
+
+    </LinearLayout>
+
+    <!--Button
         android:id="@+id/button_second"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -23,5 +44,32 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textview_second" />
+        app:layout_constraintTop_toBottomOf="@id/textview_second" /-->
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/trip_waypoint_list"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginLeft="3dp"
+        android:layout_marginRight="3dp"
+        app:layoutManager="LinearLayoutManager"
+        app:layout_constraintTop_toBottomOf="@id/tip_header"
+        app:layout_constraintBottom_toTopOf="@id/map_plan"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <androidx.fragment.app.FragmentContainerView xmlns:map="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/map_plan"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="400dp"
+        map:uiZoomControls="true"
+        android:layout_marginLeft="3dp"
+        android:layout_marginRight="3dp"
+        tools:context=".MapsFragment"
+        android:layout_gravity="bottom"
+        tools:layout="@layout/fragment_maps"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:background="@drawable/border"
+        />
 </androidx.constraintlayout.widget.ConstraintLayout>

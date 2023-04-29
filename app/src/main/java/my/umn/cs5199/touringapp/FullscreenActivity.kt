@@ -42,42 +42,9 @@ class FullscreenActivity : AppCompatActivity() {
     private lateinit var fullscreenContent: TextView
     private lateinit var fullscreenContentControls: LinearLayout
     private val hideHandler = Handler(Looper.myLooper()!!)
-    private val permissions = arrayOf(
-        //Manifest.permission.FOREGROUND_SERVICE,
-        Manifest.permission.ACCESS_FINE_LOCATION,
-        //Manifest.permission.ACCESS_BACKGROUND_LOCATION
-        //Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-    )
-    val etaFormat = SimpleDateFormat("hh:mma")
+    private var mapFragment :SupportMapFragment? = null
+    private val etaFormat = SimpleDateFormat("hh:mma")
     private val conversion = Conversion(DistanceUnit.MI)
-
-    private fun askPermissions(multiplePermissionLauncher: ActivityResultLauncher<Array<String>>) {
-        if (!hasPermissions(permissions)) {
-            Log.d(
-                "PERMISSIONS",
-                "Launching multiple contract permission launcher for ALL required permissions"
-            )
-            multiplePermissionLauncher.launch(permissions)
-        } else {
-            Log.d("PERMISSIONS", "All permissions are already granted")
-        }
-    }
-
-    private fun hasPermissions(permissions: Array<String>): Boolean {
-        for (permission in permissions) {
-            if (ActivityCompat.checkSelfPermission(
-                    this,
-                    permission
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                Log.d("PERMISSIONS", "Permission is not granted: $permission")
-                return false
-            }
-            Log.d("PERMISSIONS", "Permission already granted: $permission")
-        }
-        return true
-
-    }
 
     @SuppressLint("InlinedApi")
     private val hidePart2Runnable = Runnable {
@@ -110,7 +77,7 @@ class FullscreenActivity : AppCompatActivity() {
         false
     }
 
-    @SuppressLint("ClickableViewAccessibility")
+    @SuppressLint("ClickableViewAccessibility", "MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -126,40 +93,17 @@ class FullscreenActivity : AppCompatActivity() {
         //fullscreenContent.setOnClickListener { toggle() }
 
         fullscreenContentControls = binding.fullscreenContentControls
+        mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
+        mapFragment?.getMapAsync {
+            it.moveCamera(CameraUpdateFactory.zoomTo(19f))
+            it.isMyLocationEnabled = true
+            it.uiSettings.isCompassEnabled = true
+        }
 
         // Upon interacting with UI controls, delay any scheduled hide()
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
         //binding.dummyButton.setOnTouchListener(delayHideTouchListener)
-
-        //val webview = binding.web
-        //webview.setWebViewClient(WebViewClient())
-        //webview.getSettings().setJavaScriptEnabled(true)
-        //webview.loadUrl("https://maps.google.com/maps?" + "saddr=43.0054446,-87.9678884" + "&daddr=42.9257104,-88.0508355")
-
-
-        val multiplePermissionsContract = ActivityResultContracts.RequestMultiplePermissions()
-        val multiplePermissionLauncher =
-            registerForActivityResult(multiplePermissionsContract) { isGranted ->
-                Log.d("PERMISSIONS", "Launcher result: $isGranted")
-                if (isGranted.containsValue(false)) {
-                    Log.d(
-                        "PERMISSIONS",
-                        "At least one of the permissions was not granted, launching again..."
-                    )
-                }
-            }
-
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            askPermissions(multiplePermissionLauncher)
-        }
 
         val viewModel: LocationViewModel by lazy {
             ViewModelProvider(this).get(LocationViewModel::class.java)
@@ -183,12 +127,8 @@ class FullscreenActivity : AppCompatActivity() {
 
     @SuppressLint("MissingPermission")
     private fun updateView(state: LocationState) {
-        val mapFragment =
-            supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
+
         mapFragment?.getMapAsync {
-            it.moveCamera(CameraUpdateFactory.zoomTo(19f))
-            it.isMyLocationEnabled = true
-            it.uiSettings.isCompassEnabled = true
             it.moveCamera(CameraUpdateFactory.newLatLng(state.position.asLatLng()))
             val route: Polyline = it.addPolyline(PolylineOptions())
             route.points = state.routePoints
