@@ -2,18 +2,16 @@ package my.umn.cs5199.touringapp
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.VISIBLE
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
@@ -22,9 +20,10 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Polyline
+import com.google.android.gms.maps.model.PolylineOptions
 import kotlinx.coroutines.launch
 import my.umn.cs5199.touringapp.databinding.FragmentSecondBinding
-import java.util.function.Function
 
 /**
  * A simple [Fragment] subclass as the second destination in the navigation.
@@ -36,6 +35,7 @@ class SecondFragment : Fragment() {
     private val viewModel: TripPlanViewModel by activityViewModels()
     private val markers: MutableMap<String, Marker> = mutableMapOf()
     private lateinit var tripWayPointList: CustomAdapter
+    private val conversion = Conversion(DistanceUnit.MI)
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -61,25 +61,46 @@ class SecondFragment : Fragment() {
         tripWayPointList = CustomAdapter(requireContext(), viewModel)
         recyclerView.adapter = tripWayPointList
 
+        binding.tripPlanSave.setOnClickListener {
+            viewModel.saveTripPlan(requireContext())
+            findNavController().navigate(R.id.action_TripPlanning_to_TripSelection)
+        }
+
+        binding.tripPlanRide.setOnClickListener {
+            viewModel.saveTripPlan(requireContext()) {
+                val intent = Intent(activity, FullscreenActivity::class.java)
+                intent.putExtra("tripPlanFileName", it)
+                startActivity(intent)
+            }
+            //findNavController().navigate(R.id.action_TripSelection_to_RideDashboard)
+        }
+
         return binding.root
     }
 
     private fun updateUiState(state: TripPlanState) {
-        if (!state.tripPlan.wayPoints.isEmpty()) {
-            mapFragment?.getMapAsync { gm ->
-                val i = state.tripPlan.currentPoint
-                val waypoint = state.tripPlan.wayPoints.get(i)
-                gm.moveCamera(CameraUpdateFactory.newLatLng(waypoint.location))
-                markers.computeIfAbsent(waypoint.name) {
-                    val m = gm.addMarker(
-                        MarkerOptions().position(waypoint.location).title(waypoint.name)
-                    )!!
-                    m.showInfoWindow()
-                    tripWayPointList.notifyItemInserted(i)
-                    m
-                }
-            }
+        if (state.tripPlan.currentPoint < 0) {
+            return
         }
+        if (state.tripPlan.wayPoints.size > 1) {
+            binding.tripPlanRide.visibility = VISIBLE
+        }
+        mapFragment?.getMapAsync { gm ->
+            val i = state.tripPlan.currentPoint
+            val wayPoint = state.tripPlan.wayPoints.get(i)
+            gm.moveCamera(CameraUpdateFactory.newLatLng(wayPoint.location))
+            markers.computeIfAbsent(wayPoint.name) {
+                val m = gm.addMarker(
+                    MarkerOptions().position(wayPoint.location).title(wayPoint.name)
+                )!!
+                m.showInfoWindow()
+                tripWayPointList.notifyItemInserted(i)
+                m
+            }
+            val route: Polyline = gm.addPolyline(PolylineOptions().color(0xFF00FF00.toInt()))
+            route.points = wayPoint.segment
+        }
+
     }
 
     @SuppressLint("MissingPermission")
@@ -111,9 +132,13 @@ class SecondFragment : Fragment() {
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val name: TextView
+            val dist: TextView
+            val total: TextView
 
             init {
                 name = view.findViewById(R.id.waypoint_name)
+                dist = view.findViewById(R.id.waypoint_dist)
+                total = view.findViewById(R.id.waypoint_total_dist)
             }
         }
 
@@ -130,7 +155,10 @@ class SecondFragment : Fragment() {
             val tripPlan = viewModel.uiState.value.tripPlan
             val wayPoint = tripPlan.wayPoints.get(position)
             viewHolder.name.text = wayPoint.name
-
+            viewHolder.dist.text =
+                String.format("%03.1f", conversion.distance(wayPoint.deltaDistance))
+            viewHolder.total.text =
+                String.format("%03.1f", conversion.distance(wayPoint.totalDistance))
             /*
             val spentList = surveyInstance.optionAmountSpent ?: listOf()
             if (option != null) {

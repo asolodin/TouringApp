@@ -6,45 +6,70 @@
     android:layout_height="match_parent"
     tools:context=".SecondFragment">
 
-    <LinearLayout
-        android:id="@+id/tip_header"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/trip_header"
         android:layout_width="match_parent"
         android:layout_height="60dp"
+        android:background="@drawable/border_semi_background"
         android:layout_marginLeft="5dp"
         android:layout_marginRight="5dp"
-        android:background="@drawable/border_semi_background"
-        android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         >
+
         <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+
+            android:layout_width="240dp"
             android:layout_height="match_parent"
             android:paddingStart="10dp"
             >
+
             <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/trip_name"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
+                android:fontFamily="@font/fussion"
                 android:hint="trip name"
                 android:textSize="11sp"
-                app:fontFamily="@font/fussion"
-                android:fontFamily="@font/fussion"
-                />
+                app:fontFamily="@font/fussion" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <TextView
+            android:id="@+id/trip_plan_save"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@drawable/border_semi_background"
+            android:fontFamily="@font/fussion"
+            android:text="save"
+            android:textColor="#000000"
+            android:textSize="11sp"
+            android:gravity="center"
+            android:clickable="true"
+            app:fontFamily="@font/fussion"
+            app:layout_constraintEnd_toStartOf="@id/trip_plan_ride"
+            app:layout_constraintTop_toTopOf="parent"
+            />
 
-    </LinearLayout>
-
-    <!--Button
-        android:id="@+id/button_second"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/previous"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textview_second" /-->
+        <TextView
+            android:id="@+id/trip_plan_ride"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@drawable/border_semi_background"
+            android:fontFamily="@font/fussion"
+            android:text="ride"
+            android:visibility="invisible"
+            android:textColor="#000000"
+            android:textSize="11sp"
+            android:gravity="center"
+            android:clickable="true"
+            app:fontFamily="@font/fussion"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/trip_waypoint_list"
@@ -53,7 +78,7 @@
         android:layout_marginLeft="3dp"
         android:layout_marginRight="3dp"
         app:layoutManager="LinearLayoutManager"
-        app:layout_constraintTop_toBottomOf="@id/tip_header"
+        app:layout_constraintTop_toBottomOf="@id/trip_header"
         app:layout_constraintBottom_toTopOf="@id/map_plan"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>

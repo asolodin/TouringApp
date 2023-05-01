@@ -2,34 +2,33 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="60dp"
+    android:layout_height="40dp"
     android:layout_marginLeft="10dp"
     android:layout_marginRight="10dp"
-    android:gravity="center_vertical">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:background="@drawable/border">
-
+    android:gravity="center_vertical"
+    android:background="@drawable/border_semi_background"
+    >
         <ImageView
+            android:id="@+id/trip_icon"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:srcCompat="@android:drawable/btn_plus"
+            android:layout_height="match_parent"
+            app:srcCompat="@android:drawable/ic_menu_mapmode"
             android:layout_gravity="center_vertical"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             />
 
         <TextView
             android:id="@+id/trip_name"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Plan a trip"
+            android:layout_height="match_parent"
+            android:text="...name..."
             android:fontFamily="@font/fussion"
             app:fontFamily="@font/fussion"
-            android:textSize="22sp"
+            android:textSize="11sp"
             android:layout_gravity="center_vertical"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@id/trip_icon"
             />
-    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

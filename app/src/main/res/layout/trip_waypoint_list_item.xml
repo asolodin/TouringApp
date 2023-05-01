@@ -22,7 +22,7 @@
 
         <TextView
             android:id="@+id/waypoint_name"
-            android:layout_width="wrap_content"
+            android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:text="...location..."
             android:fontFamily="@font/fussion"
@@ -32,7 +32,7 @@
             />
         <TextView
             android:id="@+id/waypoint_dist"
-            android:layout_width="wrap_content"
+            android:layout_width="40dp"
             android:layout_height="wrap_content"
             android:text="0"
             android:fontFamily="@font/fussion"
@@ -44,7 +44,7 @@
             />
         <TextView
             android:id="@+id/waypoint_total_dist"
-            android:layout_width="wrap_content"
+            android:layout_width="40dp"
             android:layout_height="wrap_content"
             android:text="0"
             android:fontFamily="@font/fussion"

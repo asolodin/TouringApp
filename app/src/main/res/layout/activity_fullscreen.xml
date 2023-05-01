@@ -54,10 +54,9 @@
                 android:text=" ⏹ "
                 app:layout_constraintTop_toTopOf="@id/speed_units"
                 app:layout_constraintStart_toEndOf="@id/speed_units"
-                android:textSize="18sp"
+                android:textSize="20sp"
                 android:textColor="#ffffff"
                 android:clickable="true"
-                android:focusableInTouchMode="true"
                 />
             <Space
                 android:id="@+id/spacer_speed"

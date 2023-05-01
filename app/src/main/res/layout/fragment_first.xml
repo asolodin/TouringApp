@@ -43,7 +43,10 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/trip_list"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="500dp"
+        android:layout_marginLeft="3dp"
+        android:layout_marginRight="3dp"
+        app:layoutManager="LinearLayoutManager"
         app:layout_constraintBottom_toTopOf="@id/clickable_just_ride"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

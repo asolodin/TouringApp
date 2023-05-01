@@ -6,12 +6,14 @@ import android.location.Location
 import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.*
 
 enum class DistanceUnit(val factor: Double) {
@@ -57,6 +59,7 @@ data class LocationState(
     //all distances in meters, all time in seconds
     val position: Position,
     val routePoints: List<LatLng>,
+    val routePlanPoints: List<LatLng>?,
     val tripStartTime: Long,
     val tripElapsedTime: Long,
     val tripDistance: Double,
@@ -107,11 +110,14 @@ class LocationViewModel : ViewModel() {
     private val routePoints = mutableListOf<LatLng>()
     private val timer = Timer()
     private var initialized : Boolean = false
+    private val repo = TripRepository()
+    private var tripPlan : TripPlan? = null
 
     private val _uiState = MutableStateFlow(
         LocationState(
             Position(Location("default")),
             routePoints,
+            null,
             0,
             0,
             0.0,
@@ -139,6 +145,21 @@ class LocationViewModel : ViewModel() {
         scheduleUpdateJob()
         startLocationUpdates()
         initialized = true
+    }
+
+    fun loadTripPlan(context : Context, tripPlanFileName : String) {
+        viewModelScope.launch {
+            tripPlan = repo.loadFromStorage(context, tripPlanFileName)
+            if (tripPlan != null) {
+                val thisTripPlan = tripPlan!!
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        totalDistance = thisTripPlan.wayPoints.last().totalDistance,
+                        routePlanPoints = thisTripPlan.routePoints
+                    )
+                }
+            }
+        }
     }
 
     @SuppressLint("MissingPermission")

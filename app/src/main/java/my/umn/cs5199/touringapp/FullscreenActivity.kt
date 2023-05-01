@@ -1,22 +1,16 @@
 package my.umn.cs5199.touringapp
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -111,6 +105,11 @@ class FullscreenActivity : AppCompatActivity() {
 
         viewModel.initialize(this.applicationContext)
 
+        val fileName = intent.extras?.getString("tripPlanFileName")
+        if (fileName != null) {
+            viewModel.loadTripPlan(applicationContext, fileName)
+        }
+
         binding.tripStop.setOnClickListener {
             //TODO: save trip data
             startActivity(Intent(this, MainActivity::class.java))
@@ -130,8 +129,12 @@ class FullscreenActivity : AppCompatActivity() {
 
         mapFragment?.getMapAsync {
             it.moveCamera(CameraUpdateFactory.newLatLng(state.position.asLatLng()))
-            val route: Polyline = it.addPolyline(PolylineOptions())
+            val route: Polyline = it.addPolyline(PolylineOptions().color(0xAAFF0000.toInt()))
             route.points = state.routePoints
+            if (state.routePlanPoints != null) {
+                val route: Polyline = it.addPolyline(PolylineOptions().color(0xFF00FF00.toInt()))
+                route.points = state.routePlanPoints
+            }
         }
 
         binding.speed.text = String.format("%02.1f", conversion.speed(state.position.speed))
