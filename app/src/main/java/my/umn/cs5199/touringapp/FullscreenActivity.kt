@@ -27,8 +27,7 @@ import java.util.*
 
 
 /**
- * An example full-screen activity that shows and hides the system UI (i.e.
- * status bar and navigation/system bar) with user interaction.
+ *
  */
 class FullscreenActivity : AppCompatActivity() {
 
@@ -105,7 +104,7 @@ class FullscreenActivity : AppCompatActivity() {
 
         viewModel.initialize(this.applicationContext)
 
-        val fileName = intent.extras?.getString("tripPlanFileName")
+        val fileName = intent.extras?.getString(Constants.TRIP_FILE_NAME_PROP)
         if (fileName != null) {
             viewModel.loadTripPlan(applicationContext, fileName)
         }
@@ -129,10 +128,10 @@ class FullscreenActivity : AppCompatActivity() {
 
         mapFragment?.getMapAsync {
             it.moveCamera(CameraUpdateFactory.newLatLng(state.position.asLatLng()))
-            val route: Polyline = it.addPolyline(PolylineOptions().color(0xAAFF0000.toInt()))
+            val route: Polyline = it.addPolyline(PolylineOptions().color(R.color.route_actual))
             route.points = state.routePoints
             if (state.routePlanPoints != null) {
-                val route: Polyline = it.addPolyline(PolylineOptions().color(0xFF00FF00.toInt()))
+                val route: Polyline = it.addPolyline(PolylineOptions().color(R.color.route_plan))
                 route.points = state.routePlanPoints
             }
         }

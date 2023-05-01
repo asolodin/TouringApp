@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import my.umn.cs5199.touringapp.repository.TripRepository
 import java.util.*
 
 enum class DistanceUnit(val factor: Double) {

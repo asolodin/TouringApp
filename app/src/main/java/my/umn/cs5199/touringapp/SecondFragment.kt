@@ -4,6 +4,9 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.VISIBLE
@@ -61,19 +64,37 @@ class SecondFragment : Fragment() {
         tripWayPointList = CustomAdapter(requireContext(), viewModel)
         recyclerView.adapter = tripWayPointList
 
-        binding.tripPlanSave.setOnClickListener {
+        /*binding.tripPlanSave.setOnClickListener {
             viewModel.saveTripPlan(requireContext())
             findNavController().navigate(R.id.action_TripPlanning_to_TripSelection)
-        }
+        }*/
 
         binding.tripPlanRide.setOnClickListener {
             viewModel.saveTripPlan(requireContext()) {
                 val intent = Intent(activity, FullscreenActivity::class.java)
-                intent.putExtra("tripPlanFileName", it)
+                intent.putExtra(Constants.TRIP_FILE_NAME_PROP, it)
                 startActivity(intent)
             }
             //findNavController().navigate(R.id.action_TripSelection_to_RideDashboard)
         }
+
+        binding.tripPlanName.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(
+                s: CharSequence?,
+                start: Int,
+                count: Int,
+                after: Int
+            ) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+                viewModel.setTripPlanName(s.toString())
+                Log.d("touringApp.afterTextChanged", "changed text to " + s.toString())
+            }
+        })
 
         return binding.root
     }
@@ -97,7 +118,7 @@ class SecondFragment : Fragment() {
                 tripWayPointList.notifyItemInserted(i)
                 m
             }
-            val route: Polyline = gm.addPolyline(PolylineOptions().color(0xFF00FF00.toInt()))
+            val route: Polyline = gm.addPolyline(PolylineOptions().color(R.color.route_plan))
             route.points = wayPoint.segment
         }
 
@@ -117,6 +138,11 @@ class SecondFragment : Fragment() {
                 viewModel.addWayPoint(it)
             }
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        viewModel.saveTripPlan(requireContext())
     }
 
     override fun onDestroyView() {
@@ -152,55 +178,16 @@ class SecondFragment : Fragment() {
 
         // Replace the contents of a view (invoked by the layout manager)
         override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
-            val tripPlan = viewModel.uiState.value.tripPlan
-            val wayPoint = tripPlan.wayPoints.get(position)
+            val wayPoint = viewModel.getWayPoint(position)
             viewHolder.name.text = wayPoint.name
             viewHolder.dist.text =
                 String.format("%03.1f", conversion.distance(wayPoint.deltaDistance))
             viewHolder.total.text =
                 String.format("%03.1f", conversion.distance(wayPoint.totalDistance))
-            /*
-            val spentList = surveyInstance.optionAmountSpent ?: listOf()
-            if (option != null) {
-                val amountSpent = spentList.find { it.optionId == option.optionID }
-                if (amountSpent != null) {
-                    if (amountSpent.amountSpent == 0) {
-                        viewHolder.amount.text = ""
-                    } else {
-                        viewHolder.amount.text = amountSpent.amountSpent.toString()
-                    }
-                }
-            }*/
-            /*
-            viewHolder.name.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(
-                    s: CharSequence?,
-                    start: Int,
-                    count: Int,
-                    after: Int
-                ) {
-                }
-
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                }
-
-                override fun afterTextChanged(s: Editable?) {
-                }
-            })*/
-            /*onFocusChangeListener =
-                OnFocusChangeListener { v, hasFocus ->
-                    val amountTextView = v as TextView
-                    if (!hasFocus &&
-                        option != null &&
-                        option.optionID != null) {
-                        //updateAmountSpent(option.optionID, amountTextView)
-                        updateTotalAmountSpent2()
-                    }
-                }*/
         }
 
         override fun getItemCount(): Int {
-            val size = viewModel.uiState.value.tripPlan.wayPoints.size
+            val size = viewModel.getWayPointCount()
             return size
         }
     }

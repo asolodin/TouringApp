@@ -24,20 +24,24 @@
 
             android:layout_width="240dp"
             android:layout_height="match_parent"
-            android:paddingStart="10dp"
+            android:paddingBottom="2dp"
+            android:textColor="#000000"
             >
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/trip_name"
+                android:id="@+id/trip_plan_name"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:fontFamily="@font/fussion"
+                android:inputType="text"
                 android:hint="trip name"
                 android:textSize="11sp"
-                app:fontFamily="@font/fussion" />
+                android:textColor="#000000"
+                app:fontFamily="@font/fussion"
+                />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
+        <!--TextView
             android:id="@+id/trip_plan_save"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
@@ -51,7 +55,7 @@
             app:fontFamily="@font/fussion"
             app:layout_constraintEnd_toStartOf="@id/trip_plan_ride"
             app:layout_constraintTop_toTopOf="parent"
-            />
+            /-->
 
         <TextView
             android:id="@+id/trip_plan_ride"
@@ -65,6 +69,7 @@
             android:textSize="11sp"
             android:gravity="center"
             android:clickable="true"
+            android:paddingBottom="2dp"
             app:fontFamily="@font/fussion"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -74,7 +79,7 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/trip_waypoint_list"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
+        android:layout_height="250dp"
         android:layout_marginLeft="3dp"
         android:layout_marginRight="3dp"
         app:layoutManager="LinearLayoutManager"
