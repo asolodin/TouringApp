@@ -22,6 +22,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.launch
 import my.umn.cs5199.touringapp.databinding.FragmentFirstBinding
+import my.umn.cs5199.touringapp.repository.TripRepository
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
@@ -167,12 +168,11 @@ class FirstFragment : Fragment() {
                 val textView = it as TextView
                 val intent = Intent(activity, FullscreenActivity::class.java)
                 intent.putExtra(Constants.TRIP_FILE_NAME_PROP,
-                    textView.text.toString() + Constants.FILE_EXT)
+                    TripRepository.toFileName(tripPlan))
                 startActivity(intent)
             }
-            viewHolder.del.setTag(tripPlan.name.toString() + Constants.FILE_EXT)
             viewHolder.del.setOnClickListener {
-                viewModel.deleteTrip(requireContext(), it.getTag() as String)
+                viewModel.deleteTrip(requireContext(), TripRepository.toFileName(tripPlan))
             }
 
             /*viewHolder.dist.text =

@@ -22,6 +22,7 @@ import my.umn.cs5199.touringapp.grpc.RoutesClient
 import my.umn.cs5199.touringapp.repository.TripRepository
 import java.util.*
 import kotlin.streams.toList
+import com.weatherapi.api.models.*
 
 data class TripWaypoint(
     val location : LatLng,

@@ -12,12 +12,12 @@ import android.view.View
 import android.view.View.VISIBLE
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.SupportMapFragment
@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 import my.umn.cs5199.touringapp.databinding.FragmentSecondBinding
 
 /**
- * A simple [Fragment] subclass as the second destination in the navigation.
+ *
  */
 class SecondFragment : Fragment() {
 
@@ -111,14 +111,18 @@ class SecondFragment : Fragment() {
             val wayPoint = state.tripPlan.wayPoints.get(i)
             gm.moveCamera(CameraUpdateFactory.newLatLng(wayPoint.location))
             markers.computeIfAbsent(wayPoint.name) {
-                val m = gm.addMarker(
+                val marker = gm.addMarker(
                     MarkerOptions().position(wayPoint.location).title(wayPoint.name)
                 )!!
-                m.showInfoWindow()
+                marker.showInfoWindow()
                 tripWayPointList.notifyItemInserted(i)
-                m
+                marker
             }
-            val route: Polyline = gm.addPolyline(PolylineOptions().color(R.color.route_plan))
+            val route: Polyline = gm.addPolyline(
+                PolylineOptions().color(
+                    ContextCompat.getColor(requireContext(), R.color.route_plan)
+                )
+            )
             route.points = wayPoint.segment
         }
 
@@ -157,6 +161,7 @@ class SecondFragment : Fragment() {
         RecyclerView.Adapter<CustomAdapter.ViewHolder>() {
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val clickable : View
             val name: TextView
             val dist: TextView
             val total: TextView
@@ -165,6 +170,7 @@ class SecondFragment : Fragment() {
                 name = view.findViewById(R.id.waypoint_name)
                 dist = view.findViewById(R.id.waypoint_dist)
                 total = view.findViewById(R.id.waypoint_total_dist)
+                clickable = view
             }
         }
 
@@ -172,7 +178,6 @@ class SecondFragment : Fragment() {
             // Create a new view, which defines the UI of the list item
             val view = LayoutInflater.from(viewGroup.context)
                 .inflate(R.layout.trip_waypoint_list_item, viewGroup, false)
-
             return ViewHolder(view)
         }
 
@@ -184,6 +189,11 @@ class SecondFragment : Fragment() {
                 String.format("%03.1f", conversion.distance(wayPoint.deltaDistance))
             viewHolder.total.text =
                 String.format("%03.1f", conversion.distance(wayPoint.totalDistance))
+            viewHolder.clickable.setOnClickListener {
+                mapFragment?.getMapAsync { gm ->
+                    gm.moveCamera(CameraUpdateFactory.newLatLng(wayPoint.location))
+                }
+            }
         }
 
         override fun getItemCount(): Int {

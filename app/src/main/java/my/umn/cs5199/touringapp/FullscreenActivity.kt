@@ -11,6 +11,7 @@ import android.view.WindowInsets
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -20,6 +21,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
+import com.weatherapi.api.models.Current
 import kotlinx.coroutines.launch
 import my.umn.cs5199.touringapp.databinding.ActivityFullscreenBinding
 import java.text.SimpleDateFormat
@@ -128,10 +130,12 @@ class FullscreenActivity : AppCompatActivity() {
 
         mapFragment?.getMapAsync {
             it.moveCamera(CameraUpdateFactory.newLatLng(state.position.asLatLng()))
-            val route: Polyline = it.addPolyline(PolylineOptions().color(R.color.route_actual))
+            val route: Polyline = it.addPolyline(PolylineOptions().color(
+                ContextCompat.getColor(applicationContext, R.color.route_actual)))
             route.points = state.routePoints
             if (state.routePlanPoints != null) {
-                val route: Polyline = it.addPolyline(PolylineOptions().color(R.color.route_plan))
+                val route: Polyline = it.addPolyline(PolylineOptions().color(
+                    ContextCompat.getColor(applicationContext, R.color.route_plan)))
                 route.points = state.routePlanPoints
             }
         }
@@ -181,6 +185,17 @@ class FullscreenActivity : AppCompatActivity() {
                 }
             }
         }
+        updateCurrentWeather(state.weatherCur)
+    }
+
+    private fun updateCurrentWeather(cur : Current?) {
+        if (cur == null) return
+        binding.tempCur.text = cur.tempF.toString() + "°F"
+        binding.windDir.text = Constants.ARROWS[(cur.windDegree * 10 + 225) / 450 % 8].toString()
+        val wspd = Math.min(cur.windMph, cur.gustMph).toInt()
+        val wgust = Math.max(cur.windMph, cur.gustMph).toInt()
+        binding.windSpeed.text = wspd.toString()
+        binding.windGust.text = wgust.toString()
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {

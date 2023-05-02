@@ -9,6 +9,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
+import com.weatherapi.api.WeatherAPIClient
+import com.weatherapi.api.http.client.APICallBack
+import com.weatherapi.api.http.client.HttpContext
+import com.weatherapi.api.models.Current
+import com.weatherapi.api.models.Forecast1
+import com.weatherapi.api.models.ForecastJsonResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,22 +44,6 @@ data class Position(
     fun distanceTo(otherPos: Position): Double {
         return distanceTo(otherPos.loc)
     }
-
-    /*
-        fun speed(other: Position): Double {
-            if (other.time > time) {
-                return distanceTo(other.loc) * 1000 / (other.time - time)
-            } else {
-                return 0.0
-            }
-        }
-    */
-    /*fun speed(): Double {
-        if (loc.hasSpeed()) {
-            return loc.speed.toDouble()
-        }
-        return 0.0
-    }*/
 }
 
 data class LocationState(
@@ -65,7 +55,10 @@ data class LocationState(
     val tripElapsedTime: Long,
     val tripDistance: Double,
     val maxSpeed: Double,
-    val totalDistance: Double) {
+    val totalDistance: Double,
+    val tripPlan : TripPlan? = null,
+    val weatherCur : Current? = null,
+    val weatherFor : Forecast1? = null) {
 
     fun avgSpeed(): Double {
         if (tripElapsedTime > 0) {
@@ -113,6 +106,7 @@ class LocationViewModel : ViewModel() {
     private var initialized : Boolean = false
     private val repo = TripRepository()
     private var tripPlan : TripPlan? = null
+    private val weatherClient  = WeatherAPIClient()
 
     private val _uiState = MutableStateFlow(
         LocationState(
@@ -130,17 +124,14 @@ class LocationViewModel : ViewModel() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
 
-    companion object {
-        const val MIN_SPEED = 1.35 // ~3 mph
-        const val TRIP_TOTAL_DIST = 7.1
-    }
-
     fun initialize(context: Context) {
         if (initialized) return
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 updateLocation(locationResult.lastLocation)
+                getWeatherForecast(LatLng(locationResult.lastLocation?.latitude!!,
+                    locationResult.lastLocation?.longitude!!))
             }
         }
         scheduleUpdateJob()
@@ -155,6 +146,7 @@ class LocationViewModel : ViewModel() {
                 val thisTripPlan = tripPlan!!
                 _uiState.update { currentState ->
                     currentState.copy(
+                        tripPlan = thisTripPlan,
                         totalDistance = thisTripPlan.wayPoints.last().totalDistance,
                         routePlanPoints = thisTripPlan.routePoints
                     )
@@ -270,14 +262,14 @@ class LocationViewModel : ViewModel() {
             val tripStarted = firstPosition != null
 
             if (!tripStarted) {
-                if (currentPosition.speed >= MIN_SPEED) {
+                if (currentPosition.speed >= Constants.MIN_SPEED) {
                     firstPosition = position
                     Log.d("touringApp.tripStarted", "trip is auto-started")
                 }
             }
 
-            val tripPaused = tripStarted && currentPosition.speed < MIN_SPEED &&
-                    prevPosition!!.speed  < MIN_SPEED
+            val tripPaused = tripStarted && currentPosition.speed < Constants.MIN_SPEED &&
+                    prevPosition!!.speed  < Constants.MIN_SPEED
             if (tripPaused) {
                 return tripPaused()
             }
@@ -318,5 +310,31 @@ class LocationViewModel : ViewModel() {
                 )
             }
          }
+    }
+
+    private fun getWeatherForecast(location : LatLng) {
+        viewModelScope.launch {
+            weatherClient.getAPIs().getForecastWeatherAsync(
+                location.latitude.toString() + "," + location.longitude.toString(),
+                1,
+                null,
+                null,
+                null,
+                null,
+                object : APICallBack<ForecastJsonResponse?> {
+                    override fun onSuccess(context: HttpContext, response: ForecastJsonResponse?) {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                weatherCur = response?.current,
+                                weatherFor = response?.forecast
+                            )
+                        }
+                    }
+
+                    override fun onFailure(context: HttpContext, error: Throwable) {
+                        Log.e("touringApp.getWeatherForecast", error.toString())
+                    }
+                })
+        }
     }
 }

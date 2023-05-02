@@ -18,7 +18,7 @@ public class ForecastJsonResponse
     private static final long serialVersionUID = 155850995944491322L;
     private Location location;
     private Current current;
-    private Forecast forecast;
+    private Forecast1 forecast;
     /** GETTER
      * TODO: Write general description for this method
      */
@@ -57,7 +57,7 @@ public class ForecastJsonResponse
      * TODO: Write general description for this method
      */
     @JsonGetter("forecast")
-    public Forecast getForecast ( ) { 
+    public Forecast1 getForecast ( ) {
         return this.forecast;
     }
     
@@ -65,7 +65,7 @@ public class ForecastJsonResponse
      * TODO: Write general description for this method
      */
     @JsonSetter("forecast")
-    public void setForecast (Forecast value) { 
+    public void setForecast (Forecast1 value) {
         this.forecast = value;
         notifyObservers(this.forecast);
     }
