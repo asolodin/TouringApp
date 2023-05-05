@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="130dp"
+    android:background="@drawable/border">
+
+    <TextView
+        android:id="@+id/wf_time"
+        android:layout_width="290dp"
+        android:layout_height="16dp"
+        android:fontFamily="@font/fussion"
+        app:fontFamily="@font/fussion"
+        android:text="11 . . . 12 . . . 1 . . . 2 . . . 3 . . . 4 . "
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@id/spacer_wf0"
+        android:textSize="11sp"
+        android:gravity="start"
+        android:textColor="#000000" />
+
+    <Space
+        android:id="@+id/spacer_wf0"
+        android:layout_width="60dp"
+        android:layout_height="6dp"
+        app:layout_constraintTop_toBottomOf="@+id/wf_time"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/wf_sun_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/fussion"
+        app:fontFamily="@font/fussion"
+        android:text="cond"
+        app:layout_constraintTop_toBottomOf="@id/spacer_wf0"
+        app:layout_constraintStart_toStartOf="parent"
+        android:textSize="11sp"
+        android:gravity="start"
+        android:textColor="#000000" />
+
+    <TextView
+        android:id="@+id/wf_cond"
+        android:layout_width="290dp"
+        android:layout_height="16dp"
+        android:text=""
+        app:layout_constraintBottom_toBottomOf="@id/wf_sun_label"
+        app:layout_constraintStart_toEndOf="@id/spacer_wf0"
+        android:textSize="12sp"
+        android:gravity="start"
+        android:textColor="#000000"
+        android:background="@drawable/border_white_background" />
+
+    <Space
+        android:id="@+id/spacer_wf1"
+        android:layout_width="60dp"
+        android:layout_height="6dp"
+        app:layout_constraintTop_toBottomOf="@+id/wf_sun_label"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/wf_wind_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/fussion"
+        app:fontFamily="@font/fussion"
+        android:text="wind"
+        app:layout_constraintTop_toBottomOf="@id/spacer_wf1"
+        app:layout_constraintStart_toStartOf="parent"
+        android:textSize="11sp"
+        android:gravity="start"
+        android:textColor="#000000" />
+
+    <TextView
+        android:id="@+id/wf_wind"
+        android:layout_width="290dp"
+        android:layout_height="16dp"
+        android:text=""
+        app:layout_constraintBottom_toBottomOf="@id/wf_wind_label"
+        app:layout_constraintStart_toEndOf="@id/spacer_wf0"
+        android:textSize="15sp"
+        android:gravity="start"
+        android:fontFamily="monospace"
+        app:fontFamily="monospace" />
+
+    <Space
+        android:id="@+id/spacer_wf2"
+        android:layout_width="60dp"
+        android:layout_height="6dp"
+        app:layout_constraintTop_toBottomOf="@+id/wf_wind_label"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/wf_temp_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/fussion"
+        app:fontFamily="@font/fussion"
+        android:text="temp"
+        app:layout_constraintTop_toBottomOf="@id/spacer_wf2"
+        app:layout_constraintStart_toStartOf="parent"
+        android:textSize="11sp"
+        android:gravity="start"
+        android:textColor="#000000" />
+
+    <TextView
+        android:id="@+id/wf_temp"
+        android:layout_width="290dp"
+        android:layout_height="16dp"
+        android:text=""
+        app:layout_constraintBottom_toBottomOf="@id/wf_temp_label"
+        app:layout_constraintStart_toEndOf="@id/spacer_wf0"
+        android:textSize="14sp"
+        android:gravity="start"
+        android:textColor="#000000"
+
+        />
+
+    <Space
+        android:id="@+id/spacer_wf3"
+        android:layout_width="60dp"
+        android:layout_height="6dp"
+        app:layout_constraintTop_toBottomOf="@+id/wf_temp_label"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/wf_feels_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/fussion"
+        app:fontFamily="@font/fussion"
+        android:text="feels"
+        app:layout_constraintTop_toBottomOf="@id/spacer_wf3"
+        app:layout_constraintStart_toStartOf="parent"
+        android:textSize="11sp"
+        android:gravity="start"
+        android:textColor="#000000" />
+
+    <TextView
+        android:id="@+id/wf_feels"
+        android:layout_width="290dp"
+        android:layout_height="16dp"
+        android:text=""
+        app:layout_constraintBottom_toBottomOf="@id/wf_feels_label"
+        app:layout_constraintStart_toEndOf="@id/spacer_wf0"
+        android:textSize="14sp"
+        android:gravity="start"
+        android:textColor="#000000" />
+
+    <Space
+        android:id="@+id/spacer_wf4"
+        android:layout_width="60dp"
+        android:layout_height="6dp"
+        app:layout_constraintTop_toBottomOf="@+id/wf_feels_label"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

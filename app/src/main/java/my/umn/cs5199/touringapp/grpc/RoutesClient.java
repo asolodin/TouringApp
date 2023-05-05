@@ -38,6 +38,7 @@ public class RoutesClient {
 
     private static final URI serviceUri;
     private static final String API_KEY;
+
     static {
         try {
             serviceUri = new URI("https://routes.googleapis.com:443");
@@ -67,7 +68,7 @@ public class RoutesClient {
                     // in order to get the route distances, durations, and encoded polylines.
                     m.put(FIELD_MASK_HEADER, "*");
                 }
-                );
+        );
         blockingStub = RoutesGrpc.newBlockingStub(channel);
         futureStub = RoutesGrpc.newFutureStub(channel);
     }

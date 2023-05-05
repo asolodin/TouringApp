@@ -13,15 +13,13 @@
         android:layout_height="match_parent"
         android:orientation="horizontal"
         android:background="@drawable/border_semi_background"
-        android:clickable="true"
-        >
+        android:clickable="true">
 
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:srcCompat="@android:drawable/ic_menu_mapmode"
-            android:layout_gravity="center_vertical"
-            />
+            android:layout_gravity="center_vertical" />
 
         <TextView
             android:id="@+id/waypoint_name"
@@ -31,8 +29,8 @@
             android:fontFamily="@font/fussion"
             app:fontFamily="@font/fussion"
             android:textSize="11sp"
-            android:layout_gravity="center_vertical"
-            />
+            android:layout_gravity="center_vertical" />
+
         <TextView
             android:id="@+id/waypoint_dist"
             android:layout_width="40dp"
@@ -45,6 +43,7 @@
             android:layout_marginLeft="10dp"
 
             />
+
         <TextView
             android:id="@+id/waypoint_total_dist"
             android:layout_width="40dp"
@@ -54,8 +53,7 @@
             app:fontFamily="@font/fussion"
             android:textSize="11sp"
             android:layout_gravity="center_vertical"
-            android:layout_marginLeft="10dp"
-            />
+            android:layout_marginLeft="10dp" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

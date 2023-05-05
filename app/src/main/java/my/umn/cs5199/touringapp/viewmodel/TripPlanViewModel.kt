@@ -13,6 +13,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.common.util.concurrent.FutureCallback
 import com.google.maps.android.PolyUtil
 import com.google.maps.routing.v2.ComputeRoutesResponse
+import com.weatherapi.api.models.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,64 +23,79 @@ import my.umn.cs5199.touringapp.grpc.RoutesClient
 import my.umn.cs5199.touringapp.repository.TripRepository
 import java.util.*
 import kotlin.streams.toList
-import com.weatherapi.api.models.*
 
 data class TripWaypoint(
-    val location : LatLng,
-    val name : String = "",
-    val segment : List<LatLng>  = listOf(),
-    val deltaDistance : Double = 0.0,
-    val totalDistance : Double = 0.0
+    val location: LatLng,
+    val name: String = "",
+    val segment: List<LatLng> = listOf(),
+    val deltaDistance: Double = 0.0,
+    val totalDistance: Double = 0.0
 ) {}
 
 data class TripPlan(
-    val name : String = "",
+    val name: String = "",
     val wayPoints: List<TripWaypoint> = listOf(),
-    val currentPoint : Int = -1,
-    val timeStart : Long = 0,
-    val timeEnd : Long = 0
+    val currentPoint: Int = -1,
+    val timeStart: Long = 0,
+    val tripElapsedTime: Long = 0,
+    val tripDistance: Double = 0.0,
+    val timeEnd: Long = 0
 ) {
     val routePoints = wayPoints.stream().flatMap { it.segment.stream() }.toList()
 }
 
 data class TripPlanState(
     val tripPlan: TripPlan = TripPlan(),
-    val dirty : Boolean = true,
-    val error : String = ""
+    val dirty: Boolean = true,
+    val insertedPoint: Int,
+    val refreshAllPoints: Boolean
 ) {}
 
-class TripPlanViewModel : ViewModel()  {
+class TripPlanViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TripPlanState())
+    private val _uiState =
+        MutableStateFlow(TripPlanState(insertedPoint = -1, refreshAllPoints = false))
     val uiState: StateFlow<TripPlanState> = _uiState.asStateFlow()
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var initialized : Boolean = false
+    private var fusedLocationClient: FusedLocationProviderClient? = null
     private val repo = TripRepository()
+    private var tripPlanName: String = "new trip"
 
-    fun initialize(context: Context) {
-        if (initialized) return
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-
-        if (_uiState.value.tripPlan.wayPoints.isEmpty()) {
-            setInitialLocation()
+    fun initialize(context: Context, tripPlan: TripPlan?) {
+        if (fusedLocationClient == null) {
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
         }
 
-        initialized = true
+        if (tripPlan != null) {
+            tripPlanName = tripPlan.name
+            _uiState.update { currentState ->
+                currentState.copy(
+                    tripPlan = tripPlan.copy(
+                        currentPoint = 0,
+                    ),
+                    refreshAllPoints = true
+                )
+            }
+        } else if (_uiState.value.tripPlan.wayPoints.isEmpty()) {
+            setInitialLocation()
+        }
     }
 
-    private fun toWayPoint(r : ComputeRoutesResponse, i : Int, prev : TripWaypoint) : TripWaypoint {
+    private fun toWayPoint(r: ComputeRoutesResponse, i: Int, prev: TripWaypoint): TripWaypoint {
         val route = r.getRoutes(0)
         val leg = route.getLegs(route.legsCount - 1)
         val location = LatLng(leg.endLocation.latLng.latitude, leg.endLocation.latLng.longitude)
-        val name = route.description ?: "WP" + i
+        val name = if (route.description != null && route.description.length > 0) route.description
+        else "WP" + i
         val polyList = PolyUtil.decode(route.polyline.encodedPolyline)
         val delta = route.distanceMeters.toDouble()
         val total = prev.totalDistance + delta
         return TripWaypoint(location, name, polyList, delta, total)
     }
 
-    inner class RoutesCallback (private val index: Int,
-                                private val prev: TripWaypoint) : FutureCallback<ComputeRoutesResponse> {
+    inner class RoutesCallback(
+        private val index: Int,
+        private val prev: TripWaypoint
+    ) : FutureCallback<ComputeRoutesResponse> {
 
         override fun onSuccess(resp: ComputeRoutesResponse?) {
             _uiState.update { currentState ->
@@ -87,10 +103,12 @@ class TripPlanViewModel : ViewModel()  {
                     tripPlan = currentState.tripPlan.copy(
                         wayPoints = Collections.unmodifiableList(
                             currentState.tripPlan.wayPoints.toMutableList() +
-                                    toWayPoint(resp!!, index, prev)
+                                    toWayPoint(resp!!, index, prev),
                         ),
-                        currentPoint = index
+                        currentPoint = index,
+                        name = tripPlanName
                     ),
+                    insertedPoint = index,
                     dirty = true
                 )
             }
@@ -102,14 +120,16 @@ class TripPlanViewModel : ViewModel()  {
         }
     }
 
-    fun addWayPoint(location : LatLng) {
+    fun addWayPoint(location: LatLng) {
         val wayPoints = _uiState.value.tripPlan.wayPoints
         val i = wayPoints.size
         val callback = RoutesCallback(i, wayPoints.get(i - 1))
         viewModelScope.launch {
             val routes = RoutesClient()
-            routes.computeRoute(wayPoints.get(i - 1).location,
-                location, callback)
+            routes.computeRoute(
+                wayPoints.get(i - 1).location,
+                location, callback
+            )
         }
     }
 
@@ -117,18 +137,24 @@ class TripPlanViewModel : ViewModel()  {
     private fun setInitialLocation() {
         Log.d("touringApp.setInitialLocation", "setting initial location")
 
-        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+        fusedLocationClient!!.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
             .addOnSuccessListener { location: Location? ->
                 //TODO set default location as preference
                 val lat = if (location != null) location.latitude else 44.954445
                 val long = if (location != null) location.longitude else -93.091301
+                val tripPlan = TripPlan()
                 _uiState.update { currentState ->
                     currentState.copy(
-                        tripPlan = currentState.tripPlan.copy(
-                            wayPoints = listOf(TripWaypoint(location = LatLng(lat, long),
-                                name="Start")),
-                            currentPoint = 0
+                        tripPlan = tripPlan.copy(
+                            wayPoints = listOf(
+                                TripWaypoint(
+                                    location = LatLng(lat, long),
+                                    name = "Start"
+                                )
+                            ),
+                            currentPoint = 0,
                         ),
+                        insertedPoint = 0,
                         dirty = true
                     )
                 }
@@ -136,44 +162,35 @@ class TripPlanViewModel : ViewModel()  {
             }
     }
 
-    public fun saveTripPlan(context : Context) {
-        if (_uiState.value.dirty) {
-            viewModelScope.launch {
-                val tripPlan = _uiState.value.tripPlan
-                repo.saveToStorage(context, tripPlan)
-            }
-        }
-    }
-
-    public fun saveTripPlan(context : Context, onSaved : (fileName : String) -> Unit) {
+    public fun saveTripPlan(context: Context, onSaved: (fileName: String) -> Unit) {
         viewModelScope.launch {
-            val tripPlan = _uiState.value.tripPlan
+            var tripPlan = _uiState.value.tripPlan
+            val tripPlanName = tripPlanName
+            if (tripPlanName.isNotEmpty()) {
+                tripPlan = tripPlan.copy(
+                    name = tripPlanName
+                )
+            }
             val fileName = repo.saveToStorage(context, tripPlan)
             _uiState.update { currentState ->
                 currentState.copy(
-                    dirty = false
+                    dirty = false,
+                    insertedPoint = -1
                 )
             }
             onSaved.invoke(fileName)
         }
     }
 
-    fun setTripPlanName(name : String) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                tripPlan = currentState.tripPlan.copy(
-                    name = name
-                ),
-                dirty = true
-            )
-        }
+    fun setTripPlanName(name: String) {
+        tripPlanName = name
     }
 
-    fun getWayPoint(i : Int) : TripWaypoint {
+    fun getWayPoint(i: Int): TripWaypoint {
         return uiState.value.tripPlan.wayPoints.get(i)
     }
 
-    fun getWayPointCount() : Int {
+    fun getWayPointCount(): Int {
         return uiState.value.tripPlan.wayPoints.size
     }
 }

@@ -1,11 +1,8 @@
 package my.umn.cs5199.touringapp
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -35,9 +32,11 @@ class SecondFragment : Fragment() {
 
     private var _binding: FragmentSecondBinding? = null
     private var mapFragment: SupportMapFragment? = null
-    private val viewModel: TripPlanViewModel by activityViewModels()
+    private val viewModelTripPlan: TripPlanViewModel by activityViewModels()
+    private val viewModelTripList: TripListViewModel by activityViewModels()
+
     private val markers: MutableMap<String, Marker> = mutableMapOf()
-    private lateinit var tripWayPointList: CustomAdapter
+    private lateinit var tripWayPointListAdapter: CustomAdapter
     private val conversion = Conversion(DistanceUnit.MI)
 
     // This property is only valid between onCreateView and
@@ -47,85 +46,75 @@ class SecondFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
         _binding = FragmentSecondBinding.inflate(inflater, container, false)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect {
+                viewModelTripPlan.uiState.collect {
                     updateUiState(it)
                 }
             }
         }
-
-        viewModel.initialize(requireContext())
+        val tripPlan = viewModelTripList.getEditTripPlan()
+        Log.d("touringApp", "editing trip plan " + tripPlan)
+        viewModelTripPlan.initialize(requireContext(), tripPlan)
         val recyclerView: RecyclerView = binding.tripWaypointList
-        tripWayPointList = CustomAdapter(requireContext(), viewModel)
-        recyclerView.adapter = tripWayPointList
+        tripWayPointListAdapter = CustomAdapter(viewModelTripPlan)
+        recyclerView.adapter = tripWayPointListAdapter
 
-        /*binding.tripPlanSave.setOnClickListener {
-            viewModel.saveTripPlan(requireContext())
-            findNavController().navigate(R.id.action_TripPlanning_to_TripSelection)
-        }*/
 
         binding.tripPlanRide.setOnClickListener {
-            viewModel.saveTripPlan(requireContext()) {
+            viewModelTripPlan.setTripPlanName(binding.tripPlanName.text.toString())
+            viewModelTripPlan.saveTripPlan(requireContext()) {
                 val intent = Intent(activity, FullscreenActivity::class.java)
                 intent.putExtra(Constants.TRIP_FILE_NAME_PROP, it)
                 startActivity(intent)
             }
-            //findNavController().navigate(R.id.action_TripSelection_to_RideDashboard)
         }
-
-        binding.tripPlanName.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(
-                s: CharSequence?,
-                start: Int,
-                count: Int,
-                after: Int
-            ) {
-            }
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            }
-
-            override fun afterTextChanged(s: Editable?) {
-                viewModel.setTripPlanName(s.toString())
-                Log.d("touringApp.afterTextChanged", "changed text to " + s.toString())
-            }
-        })
 
         return binding.root
     }
 
     private fun updateUiState(state: TripPlanState) {
-        if (state.tripPlan.currentPoint < 0) {
-            return
-        }
         if (state.tripPlan.wayPoints.size > 1) {
             binding.tripPlanRide.visibility = VISIBLE
         }
-        mapFragment?.getMapAsync { gm ->
-            val i = state.tripPlan.currentPoint
-            val wayPoint = state.tripPlan.wayPoints.get(i)
-            gm.moveCamera(CameraUpdateFactory.newLatLng(wayPoint.location))
-            markers.computeIfAbsent(wayPoint.name) {
-                val marker = gm.addMarker(
-                    MarkerOptions().position(wayPoint.location).title(wayPoint.name)
-                )!!
-                marker.showInfoWindow()
-                tripWayPointList.notifyItemInserted(i)
-                marker
-            }
-            val route: Polyline = gm.addPolyline(
-                PolylineOptions().color(
-                    ContextCompat.getColor(requireContext(), R.color.route_plan)
-                )
-            )
-            route.points = wayPoint.segment
+        if (state.insertedPoint > -1) {
+            tripWayPointListAdapter.notifyItemInserted(state.insertedPoint)
         }
+        if (state.tripPlan.currentPoint > -1 || state.refreshAllPoints) {
 
+            val tripName = binding.tripPlanName.text ?: ""
+            if (!tripName.equals(state.tripPlan.name)) {
+                binding.tripPlanName.setText(state.tripPlan.name)
+            }
+
+            mapFragment?.getMapAsync { gm ->
+                var i = if (state.refreshAllPoints) 0 else state.tripPlan.currentPoint
+                val to =
+                    if (state.refreshAllPoints) state.tripPlan.wayPoints.size else state.tripPlan.currentPoint + 1
+                while (i < to) {
+                    val wayPoint = state.tripPlan.wayPoints.get(i)
+                    gm.moveCamera(CameraUpdateFactory.newLatLng(wayPoint.location))
+                    markers.computeIfAbsent(wayPoint.name) {
+                        val marker = gm.addMarker(
+                            MarkerOptions().position(wayPoint.location).title(wayPoint.name)
+                        )!!
+                        marker.showInfoWindow()
+                        marker
+                    }
+                    val route: Polyline = gm.addPolyline(
+                        PolylineOptions().color(
+                            ContextCompat.getColor(requireContext(), R.color.route_plan)
+                        )
+                    )
+                    route.points = wayPoint.segment
+                    i += 1
+                }
+            }
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -136,17 +125,19 @@ class SecondFragment : Fragment() {
             it.moveCamera(CameraUpdateFactory.zoomTo(15f))
             it.isMyLocationEnabled = true
             it.uiSettings.isCompassEnabled = true
-            it.uiSettings.isMapToolbarEnabled = true
+            //it.uiSettings.isMapToolbarEnabled = true
             it.uiSettings.isZoomControlsEnabled = true
             it.setOnMapLongClickListener {
-                viewModel.addWayPoint(it)
+                viewModelTripPlan.setTripPlanName(binding.tripPlanName.text.toString())
+                viewModelTripPlan.addWayPoint(it)
             }
         }
     }
 
     override fun onStop() {
+        viewModelTripPlan.setTripPlanName(binding.tripPlanName.text.toString())
+        viewModelTripPlan.saveTripPlan(requireContext()) {}
         super.onStop()
-        viewModel.saveTripPlan(requireContext())
     }
 
     override fun onDestroyView() {
@@ -155,13 +146,12 @@ class SecondFragment : Fragment() {
     }
 
     inner class CustomAdapter(
-        private val context: Context,
         private val viewModel: TripPlanViewModel
     ) :
         RecyclerView.Adapter<CustomAdapter.ViewHolder>() {
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val clickable : View
+            val clickable: View
             val name: TextView
             val dist: TextView
             val total: TextView
@@ -170,7 +160,7 @@ class SecondFragment : Fragment() {
                 name = view.findViewById(R.id.waypoint_name)
                 dist = view.findViewById(R.id.waypoint_dist)
                 total = view.findViewById(R.id.waypoint_total_dist)
-                clickable = view
+                clickable = view.findViewById(R.id.trip_waypoint)
             }
         }
 

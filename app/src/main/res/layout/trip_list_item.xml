@@ -6,46 +6,44 @@
     android:layout_marginLeft="10dp"
     android:layout_marginRight="10dp"
     android:gravity="center_vertical"
-    android:background="@drawable/border_semi_background"
-    >
-        <ImageView
-            android:id="@+id/trip_icon"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            app:srcCompat="@android:drawable/ic_menu_mapmode"
-            android:layout_gravity="center_vertical"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            />
+    android:background="@drawable/border_semi_background">
 
-        <TextView
-            android:id="@+id/trip_name"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:text="...name..."
-            android:fontFamily="@font/fussion"
-            app:fontFamily="@font/fussion"
-            android:textSize="14sp"
-            android:layout_gravity="center"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toEndOf="@id/trip_icon"
-            android:gravity="center"
-            android:layout_marginStart="5sp"
-            android:clickable="true"
-            />
+    <ImageView
+        android:id="@+id/trip_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        app:srcCompat="@android:drawable/ic_menu_mapmode"
+        android:layout_gravity="center_vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
-        <TextView
-            android:id="@+id/trip_delete"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:text="❌"
-            android:fontFamily="@font/fussion"
-            app:fontFamily="@font/fussion"
-            android:textSize="14sp"
-            android:layout_gravity="center"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:gravity="center"
-            android:layout_marginStart="5sp"
-            android:clickable="true"
-            />
+    <TextView
+        android:id="@+id/trip_name"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:text="...name..."
+        android:fontFamily="@font/fussion"
+        app:fontFamily="@font/fussion"
+        android:textSize="14sp"
+        android:layout_gravity="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@id/trip_icon"
+        android:gravity="center"
+        android:layout_marginStart="5sp"
+        android:clickable="true"
+        android:longClickable="true" />
+
+    <TextView
+        android:id="@+id/trip_delete"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:text="❌"
+        android:fontFamily="@font/fussion"
+        app:fontFamily="@font/fussion"
+        android:textSize="14sp"
+        android:layout_gravity="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:gravity="center"
+        android:layout_marginStart="5sp"
+        android:clickable="true" />
 </androidx.constraintlayout.widget.ConstraintLayout>

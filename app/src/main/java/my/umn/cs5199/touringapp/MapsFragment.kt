@@ -1,7 +1,6 @@
 package my.umn.cs5199.touringapp
 
 import android.content.Context
-import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -17,7 +16,8 @@ import com.google.android.gms.maps.model.MarkerOptions
 
 class MapsFragment : Fragment() {
 
-    var locationManager = requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    var locationManager =
+        requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
     private val callback = OnMapReadyCallback { googleMap ->
         /**

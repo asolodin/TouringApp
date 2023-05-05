@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".FirstFragment">
 
+
     <LinearLayout
         android:id="@+id/clickable_add_trip"
         android:layout_width="match_parent"
@@ -16,29 +17,39 @@
         android:background="@drawable/border_semi_background"
         android:clickable="true"
         android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/clickable_refresh"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        >
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="start"
-            app:srcCompat="@drawable/justride"
-            />
+            app:srcCompat="@drawable/justride" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:fontFamily="@font/fussion"
-            android:text="Plan a trip..."
-            android:textSize="22sp"
+            android:text="Plan a trip"
+            android:textSize="18sp"
             app:fontFamily="@font/fussion"
-            android:paddingStart="10dp"
-            />
+            android:paddingStart="10dp" />
     </LinearLayout>
+
+
+    <ImageView
+        android:id="@+id/clickable_refresh"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginRight="10dp"
+        android:src="@android:drawable/ic_popup_sync"
+        android:background="@drawable/border_semi_background"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/trip_list"
@@ -70,8 +81,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="start"
-            app:srcCompat="@drawable/justride"
-            />
+            app:srcCompat="@drawable/justride" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -81,8 +91,7 @@
             android:text="Just ride!"
             android:textSize="22sp"
             app:fontFamily="@font/fussion"
-            android:paddingStart="10dp"
-            />
+            android:paddingStart="10dp" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

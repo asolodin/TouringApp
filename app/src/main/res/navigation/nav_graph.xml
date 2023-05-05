@@ -32,6 +32,5 @@
         android:id="@+id/FullScreen"
         android:name="my.umn.cs5199.touringapp.FullscreenActivity"
         android:label="Ride Dashboard"
-        tools:layout="@layout/fragment_second">
-    </activity>
+        tools:layout="@layout/fragment_second"></activity>
 </navigation>

@@ -6,16 +6,18 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.window.OnBackInvokedCallback
+import androidx.activity.addCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
-import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
@@ -23,10 +25,9 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.launch
 import my.umn.cs5199.touringapp.databinding.FragmentFirstBinding
 import my.umn.cs5199.touringapp.repository.TripRepository
+import java.text.SimpleDateFormat
+import java.util.*
 
-/**
- * A simple [Fragment] subclass as the default destination in the navigation.
- */
 class FirstFragment : Fragment() {
 
     private var _binding: FragmentFirstBinding? = null
@@ -40,7 +41,7 @@ class FirstFragment : Fragment() {
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
-    private val viewModel: TripListViewModel by activityViewModels()
+    private lateinit var viewModel: TripListViewModel
     private lateinit var tripListAdapter: FirstFragment.CustomAdapter
 
     val multiplePermissionsContract = ActivityResultContracts.RequestMultiplePermissions()
@@ -72,6 +73,8 @@ class FirstFragment : Fragment() {
             askPermissions(multiplePermissionLauncher)
         }
 
+        viewModel = ViewModelProvider(requireActivity())[TripListViewModel::class.java]
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect {
@@ -81,11 +84,17 @@ class FirstFragment : Fragment() {
         }
 
         viewModel.initialize(requireContext())
+
         val recyclerView: RecyclerView = binding.tripList
         tripListAdapter = CustomAdapter(requireContext(), viewModel)
         recyclerView.adapter = tripListAdapter
 
         return binding.root
+    }
+
+    override fun onResume() {
+        viewModel.initialize(requireContext())
+        super.onResume()
     }
 
     private fun updateUiState(state: TripListState) {
@@ -99,7 +108,12 @@ class FirstFragment : Fragment() {
             findNavController().navigate(R.id.action_TripSelection_to_RideDashboard)
         }
         binding.clickableAddTrip.setOnClickListener {
+            viewModel.setEditTripPlanIndex(null)
             findNavController().navigate(R.id.action_TripSelection_to_TripPlanningFragment)
+        }
+        binding.clickableRefresh.setOnClickListener {
+            viewModel.setEditTripPlanIndex(null)
+            viewModel.initialize(requireContext())
         }
     }
 
@@ -164,13 +178,26 @@ class FirstFragment : Fragment() {
         override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
             val tripPlan = viewModel.getTripPlan(position)
             viewHolder.name.text = tripPlan.name
+            if (tripPlan.timeStart > 0) {
+                viewHolder.name.append("\n")
+                viewHolder.name.append(
+                    SimpleDateFormat("dd/MM/yyyy hh:mma").format(Date(tripPlan.timeStart * 1000))
+                )
+            }
             viewHolder.name.setOnClickListener {
-                val textView = it as TextView
                 val intent = Intent(activity, FullscreenActivity::class.java)
-                intent.putExtra(Constants.TRIP_FILE_NAME_PROP,
-                    TripRepository.toFileName(tripPlan))
+                intent.putExtra(
+                    Constants.TRIP_FILE_NAME_PROP,
+                    TripRepository.toFileName(tripPlan)
+                )
                 startActivity(intent)
             }
+            viewHolder.name.setOnLongClickListener {
+                viewModel.setEditTripPlanIndex(position)
+                findNavController().navigate(R.id.action_TripSelection_to_TripPlanningFragment)
+                true
+            }
+
             viewHolder.del.setOnClickListener {
                 viewModel.deleteTrip(requireContext(), TripRepository.toFileName(tripPlan))
             }

@@ -29,7 +29,7 @@ enum class DistanceUnit(val factor: Double) {
 
 data class Position(
     val loc: Location,
-    val speed : Double = loc.speed.toDouble()
+    val speed: Double = loc.speed.toDouble()
 ) {
     val time = loc.time / 1000
 
@@ -44,6 +44,10 @@ data class Position(
     fun distanceTo(otherPos: Position): Double {
         return distanceTo(otherPos.loc)
     }
+
+    fun secondsSince(): Long {
+        return System.currentTimeMillis() - loc.time
+    }
 }
 
 data class LocationState(
@@ -56,9 +60,11 @@ data class LocationState(
     val tripDistance: Double,
     val maxSpeed: Double,
     val totalDistance: Double,
-    val tripPlan : TripPlan? = null,
-    val weatherCur : Current? = null,
-    val weatherFor : Forecast1? = null) {
+    val paused: Boolean,
+    val tripPlan: TripPlan? = null,
+    val weatherCur: Current? = null,
+    val weatherFor: Forecast1? = null
+) {
 
     fun avgSpeed(): Double {
         if (tripElapsedTime > 0) {
@@ -103,10 +109,9 @@ class LocationViewModel : ViewModel() {
     var position: Position? = null
     private val routePoints = mutableListOf<LatLng>()
     private val timer = Timer()
-    private var initialized : Boolean = false
     private val repo = TripRepository()
-    private var tripPlan : TripPlan? = null
-    private val weatherClient  = WeatherAPIClient()
+    private var tripPlan: TripPlan? = null
+    private val weatherClient = WeatherAPIClient()
 
     private val _uiState = MutableStateFlow(
         LocationState(
@@ -117,7 +122,8 @@ class LocationViewModel : ViewModel() {
             0,
             0.0,
             0.0,
-            10460.0
+            0.0,
+            true
         )
     )
     val uiState: StateFlow<LocationState> = _uiState.asStateFlow()
@@ -125,21 +131,37 @@ class LocationViewModel : ViewModel() {
     private lateinit var locationCallback: LocationCallback
 
     fun initialize(context: Context) {
-        if (initialized) return
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 updateLocation(locationResult.lastLocation)
-                getWeatherForecast(LatLng(locationResult.lastLocation?.latitude!!,
-                    locationResult.lastLocation?.longitude!!))
             }
         }
         scheduleUpdateJob()
         startLocationUpdates()
-        initialized = true
     }
 
-    fun loadTripPlan(context : Context, tripPlanFileName : String) {
+    fun saveTripPlan(context: Context) {
+        with(uiState.value) {
+            if (tripPlan != null && tripStartTime != null) {
+                viewModelScope.launch {
+                    val tripPlan = tripPlan.copy(
+                        timeStart = tripStartTime,
+                        tripElapsedTime = tripElapsedTime,
+                        tripDistance = tripDistance
+                    )
+                    repo.saveToStorage(context, tripPlan)
+                }
+            }
+        }
+    }
+
+    fun stopUpdates() {
+        timer.cancel()
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
+
+    fun loadTripPlan(context: Context, tripPlanFileName: String) {
         viewModelScope.launch {
             tripPlan = repo.loadFromStorage(context, tripPlanFileName)
             if (tripPlan != null) {
@@ -148,6 +170,8 @@ class LocationViewModel : ViewModel() {
                     currentState.copy(
                         tripPlan = thisTripPlan,
                         totalDistance = thisTripPlan.wayPoints.last().totalDistance,
+                        tripDistance = thisTripPlan.tripDistance,
+                        tripElapsedTime = thisTripPlan.tripElapsedTime,
                         routePlanPoints = thisTripPlan.routePoints
                     )
                 }
@@ -172,147 +196,96 @@ class LocationViewModel : ViewModel() {
         if (location == null) {
             return
         }
+        val initWeather: Boolean = (position == null)
         position = Position(location)
+        if (initWeather) {
+            getWeather(position!!.asLatLng())
+        }
     }
-
-    /*
-    private fun updateState() {
-        if (location.speed > MIN_SPEED) {
-            if (firstPosition == null) {
-                //start of trip
-                routePoints.clear()
-                routePoints.add(newPosition.asLatLng())
-                firstPosition = newPosition
-            } else {
-                //next position
-            }
-        } else {
-            //either paused or not started yet
-        }
-
-        //if started
-
-        var tmpPosition = prevPosition
-        if (tmpPosition != null) {
-            newPosition = Position(
-                location,
-                tmpPosition.tripTime +
-                        System.currentTimeMillis() - tmpPosition.time,
-                tmpPosition.tripDistance + tmpPosition.distanceTo(location),
-                tmpPosition.maxSpeed
-            )
-        } else {
-            newPosition = Position(location, 0, 0.0, 0.0)
-            firstPosition = newPosition
-        }
-
-        Log.d("touringApp","new position: " + newPosition)
-
-        val avgSpeed = newPosition.avgSpeed()
-        binding.speedAvg.text = String.format("%02.1f", avgSpeed)
-        binding.speedMax.text = String.format("%02.1f", newPosition.maxSpeed)
-        binding.tripDistance.text = String.format("%03.1f", newPosition.tripDistance)
-            .padStart(5, '0')
-        binding.tripTotalDistance.text = String.format("%03.1f", Position.TRIP_TOTAL_DIST)
-            .padStart(5, '0')
-
-        binding.tripTime.text = String.format(
-            "%02d:%02d",
-            (newPosition.tripTime / Position.MS_PER_HR).toInt(),
-            (newPosition.tripTime / (60 * 1000) % 60).toInt()
-        )
-
-        if (avgSpeed > 0) {
-            var tripEstTime = (Position.TRIP_TOTAL_DIST / avgSpeed * 60).toInt() //minutes
-            if (tripEstTime > 24 * 60) {
-                tripEstTime = 23 * 60 + 59
-            }
-            binding.tripEstTime.text = String.format(
-                "%02d:%02d",
-                tripEstTime / 60, tripEstTime % 60
-            )
-        }
-        if (prevPosition != null && firstPosition != null) {
-            val etaSpeed = newPosition.tripDistance * Position.MS_PER_HR /
-                    (newPosition.time - firstPosition!!.time)
-            val remainingDistance = Position.TRIP_TOTAL_DIST - newPosition.tripDistance
-            val remainingTime = remainingDistance / etaSpeed
-            val etaTime = newPosition.time + (remainingTime * Position.MS_PER_HR)
-            Log.d("touringApp", "etaSpeed: " + etaSpeed + ", remDist: " +
-                    remainingDistance + ", remTime: " + remainingTime)
-            binding.tripEta.text = etaFormat.format(Date(etaTime.toLong()))
-        }
-
-        //val canvas = binding.altitudeChart.holder.lockCanvas()
-
-        prevPosition = newPosition
-    }*/
 
     private fun scheduleUpdateJob() {
-        timer.schedule(StateUpdateTask(), 2000, 1000)
+        timer.schedule(LocationUpdateTask(), 5000, 1000)
+        timer.schedule(WeatherUpdateTask(), 5000, 10 * 60 * 1000)
     }
 
-    inner class StateUpdateTask : TimerTask() {
+    fun updatePositionState(prevPosition: Position?): Position? {
+        val currentPosition = position ?: return null
+        val tripStarted = firstPosition != null
+
+        if (prevPosition == null) {
+            setInitialLocation(currentPosition)
+            return currentPosition
+        }
+
+        if (!tripStarted) {
+            if (prevPosition.speed >= Constants.MIN_AUTO_START_SPEED &&
+                currentPosition.speed >= Constants.MIN_AUTO_START_SPEED
+            ) {
+                firstPosition = position
+                Log.d("touringApp.updatePositionState", "trip is auto-started")
+            }
+        }
+
+        // two consecutive updates with speed below threshold triggers auto-pause mode
+        val tripPaused = !tripStarted || (currentPosition.speed < Constants.MIN_AUTO_START_SPEED &&
+                prevPosition.speed < Constants.MIN_AUTO_START_SPEED) ||
+                (currentPosition.secondsSince() > Constants.MIN_AUTO_PAUSE_TIME)
+
+        if (tripPaused) {
+            Log.d("touringApp.updatePositionState", "trip is auto-paused")
+            routePoints.clear()
+        } else {
+            routePoints.add(currentPosition.asLatLng())
+        }
+
+        val tripStartTime = if (tripStarted) firstPosition!!.time else 0
+        val timeDelta = currentPosition.time - prevPosition.time
+        val distDelta = currentPosition.distanceTo(prevPosition)
+        val maxSpeed = Math.max(currentPosition.speed, uiState.value.maxSpeed)
+
+        _uiState.update { currentState ->
+            currentState.copy(
+                position = currentPosition,
+                routePoints = routePoints,
+                tripStartTime = tripStartTime,
+                tripElapsedTime = currentState.tripElapsedTime + timeDelta,
+                tripDistance = currentState.tripDistance + distDelta,
+                maxSpeed = maxSpeed,
+                paused = tripPaused
+            )
+        }
+        return currentPosition
+    }
+
+    private fun setInitialLocation(currentPosition: Position) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                position = currentPosition,
+            )
+        }
+    }
+
+    inner class LocationUpdateTask : TimerTask() {
 
         var prevPosition: Position? = null
 
         override fun run() {
-            val currentPosition = position ?: return
-            val prevPosition = prevPosition
-            val tripStarted = firstPosition != null
-
-            if (!tripStarted) {
-                if (currentPosition.speed >= Constants.MIN_SPEED) {
-                    firstPosition = position
-                    Log.d("touringApp.tripStarted", "trip is auto-started")
-                }
-            }
-
-            val tripPaused = tripStarted && currentPosition.speed < Constants.MIN_SPEED &&
-                    prevPosition!!.speed  < Constants.MIN_SPEED
-            if (tripPaused) {
-                return tripPaused()
-            }
-
-            if (currentPosition != prevPosition) {
-                routePoints.add(currentPosition.asLatLng())
-
-
-                val tripStartTime = if (tripStarted) firstPosition!!.time else 0
-                val timeDelta =
-                    if (prevPosition != null) currentPosition.time - prevPosition.time else 0
-                val distDelta =
-                    if (prevPosition != null) currentPosition.distanceTo(prevPosition) else 0.0
-                val maxSpeed = if (prevPosition != null) Math.max(
-                    currentPosition.speed,
-                    prevPosition.speed
-                ) else
-                    currentPosition.speed
-
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        position = currentPosition,
-                        routePoints = routePoints,
-                        tripStartTime = tripStartTime,
-                        tripElapsedTime = currentState.tripElapsedTime + timeDelta,
-                        tripDistance = currentState.tripDistance + distDelta,
-                        maxSpeed = maxSpeed
-                    )
-                }
-                StateUpdateTask@ this.prevPosition = currentPosition
-            }
+            prevPosition = updatePositionState(prevPosition)
         }
-
-        private fun tripPaused() {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    position = currentState.position.copy(speed = 0.0)
-                )
-            }
-         }
     }
 
-    private fun getWeatherForecast(location : LatLng) {
+    inner class WeatherUpdateTask : TimerTask() {
+
+        override fun run() {
+            val location = position?.asLatLng()
+            if (location != null) {
+                getWeather(location)
+            }
+        }
+    }
+
+    private fun getWeather(location: LatLng) {
+        Log.d("touringApp.getWeather", "getting weather...")
         viewModelScope.launch {
             weatherClient.getAPIs().getForecastWeatherAsync(
                 location.latitude.toString() + "," + location.longitude.toString(),

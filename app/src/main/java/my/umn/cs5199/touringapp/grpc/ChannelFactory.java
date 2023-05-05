@@ -23,7 +23,7 @@ import io.grpc.android.AndroidChannelBuilder;
 public class ChannelFactory {
 
     private static final ConcurrentHashMap<URI, Consumer<Metadata>>
-        interceptors = new ConcurrentHashMap<>();
+            interceptors = new ConcurrentHashMap<>();
 
     private static final ChannelFactory INSTANCE = new ChannelFactory();
 
@@ -36,16 +36,17 @@ public class ChannelFactory {
             .expireAfterWrite(4, TimeUnit.MINUTES)
             .build(
                     new CacheLoader<URI, Channel>() {
-                        public Channel load(URI key)  {
+                        public Channel load(URI key) {
                             return openChannel(key);
                         }
                     });
+
     private Channel openChannel(URI uri) {
         Channel channel = AndroidChannelBuilder.forAddress(uri.getHost(), uri.getPort()).build();
         channel = ClientInterceptors.intercept(channel, new ClientInterceptor() {
             @Override
-            public  ClientCall interceptCall(MethodDescriptor method,
-                                             CallOptions callOptions, Channel next) {
+            public ClientCall interceptCall(MethodDescriptor method,
+                                            CallOptions callOptions, Channel next) {
                 ClientCall call = next.newCall(method, callOptions);
                 call = new ForwardingClientCall.SimpleForwardingClientCall(call) {
                     @Override
