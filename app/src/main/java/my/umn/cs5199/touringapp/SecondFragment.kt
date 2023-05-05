@@ -81,7 +81,9 @@ class SecondFragment : Fragment() {
         if (state.tripPlan.wayPoints.size > 1) {
             binding.tripPlanRide.visibility = VISIBLE
         }
-        if (state.insertedPoint > -1) {
+        if (state.refreshAllPoints) {
+            tripWayPointListAdapter.notifyDataSetChanged()
+        } else if (state.insertedPoint > -1) {
             tripWayPointListAdapter.notifyItemInserted(state.insertedPoint)
         }
         if (state.tripPlan.currentPoint > -1 || state.refreshAllPoints) {
@@ -133,11 +135,17 @@ class SecondFragment : Fragment() {
             }
         }
     }
-
+/*
     override fun onStop() {
         viewModelTripPlan.setTripPlanName(binding.tripPlanName.text.toString())
         viewModelTripPlan.saveTripPlan(requireContext()) {}
         super.onStop()
+    }
+*/
+    override fun onPause() {
+        viewModelTripPlan.setTripPlanName(binding.tripPlanName.text.toString())
+        viewModelTripPlan.saveTripPlan(requireContext()) {}
+        super.onPause()
     }
 
     override fun onDestroyView() {

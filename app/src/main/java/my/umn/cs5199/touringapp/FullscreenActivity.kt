@@ -69,6 +69,7 @@ class FullscreenActivity : AppCompatActivity() {
         mapFragment?.getMapAsync {
             it.moveCamera(CameraUpdateFactory.zoomTo(19f))
             it.isMyLocationEnabled = true
+            it.uiSettings.isZoomControlsEnabled = true
             it.uiSettings.isCompassEnabled = true
         }
 

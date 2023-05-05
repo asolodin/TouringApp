@@ -75,7 +75,7 @@ class TripPlanViewModel : ViewModel() {
                     refreshAllPoints = true
                 )
             }
-        } else if (_uiState.value.tripPlan.wayPoints.isEmpty()) {
+        } else {
             setInitialLocation()
         }
     }
@@ -136,7 +136,7 @@ class TripPlanViewModel : ViewModel() {
     @SuppressLint("MissingPermission")
     private fun setInitialLocation() {
         Log.d("touringApp.setInitialLocation", "setting initial location")
-
+        tripPlanName = ""
         fusedLocationClient!!.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
             .addOnSuccessListener { location: Location? ->
                 //TODO set default location as preference
@@ -155,6 +155,7 @@ class TripPlanViewModel : ViewModel() {
                             currentPoint = 0,
                         ),
                         insertedPoint = 0,
+                        refreshAllPoints = true,
                         dirty = true
                     )
                 }
@@ -163,6 +164,7 @@ class TripPlanViewModel : ViewModel() {
     }
 
     public fun saveTripPlan(context: Context, onSaved: (fileName: String) -> Unit) {
+        if (tripPlanName.isEmpty()) return
         viewModelScope.launch {
             var tripPlan = _uiState.value.tripPlan
             val tripPlanName = tripPlanName
