@@ -136,13 +136,6 @@ class TripPlanFragment : Fragment() {
         }
     }
 
-    /*
-        override fun onStop() {
-            viewModelTripPlan.setTripPlanName(binding.tripPlanName.text.toString())
-            viewModelTripPlan.saveTripPlan(requireContext()) {}
-            super.onStop()
-        }
-    */
     override fun onPause() {
         viewModelTripPlan.setTripPlanName(binding.tripPlanName.text.toString())
         viewModelTripPlan.saveTripPlan(requireContext()) {}

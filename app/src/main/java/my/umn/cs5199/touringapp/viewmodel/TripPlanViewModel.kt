@@ -67,7 +67,9 @@ class TripPlanViewModel : ViewModel() {
         }
 
         if (tripPlan != null) {
-            tripPlanName = tripPlan.name
+            if (!tripPlan.name.isBlank()) {
+                tripPlanName = tripPlan.name
+            }
             _uiState.update { currentState ->
                 currentState.copy(
                     tripPlan = tripPlan.copy(
@@ -154,6 +156,7 @@ class TripPlanViewModel : ViewModel() {
                                 )
                             ),
                             currentPoint = 0,
+                            name = tripPlanName
                         ),
                         insertedPoint = 0,
                         refreshAllPoints = true,
@@ -165,10 +168,9 @@ class TripPlanViewModel : ViewModel() {
     }
 
     public fun saveTripPlan(context: Context, onSaved: (fileName: String) -> Unit) {
-        if (tripPlanName.isEmpty()) return
         viewModelScope.launch {
             var tripPlan = _uiState.value.tripPlan
-            val tripPlanName = tripPlanName
+            val tripPlanName = if (tripPlanName.isBlank()) "new trip " + Random().nextInt() % 100 else tripPlanName
             if (tripPlanName.isNotEmpty()) {
                 tripPlan = tripPlan.copy(
                     name = tripPlanName

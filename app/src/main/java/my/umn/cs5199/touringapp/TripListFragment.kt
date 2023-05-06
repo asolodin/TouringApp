@@ -190,10 +190,12 @@ class TripListFragment : Fragment() {
                 )
                 startActivity(intent)
             }
-            viewHolder.name.setOnLongClickListener {
-                viewModel.setEditTripPlanIndex(position)
-                findNavController().navigate(R.id.action_TripSelection_to_TripPlanningFragment)
-                true
+            if (tripPlan.timeStart == 0L) {
+                viewHolder.name.setOnLongClickListener {
+                    viewModel.setEditTripPlanIndex(position)
+                    findNavController().navigate(R.id.action_TripSelection_to_TripPlanningFragment)
+                    true
+                }
             }
 
             viewHolder.del.setOnClickListener {
