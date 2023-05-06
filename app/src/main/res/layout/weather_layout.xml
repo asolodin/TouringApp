@@ -153,4 +153,28 @@
         app:layout_constraintTop_toBottomOf="@+id/wf_feels_label"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <TextView
+        android:id="@+id/wf_humidity_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/fussion"
+        app:fontFamily="@font/fussion"
+        android:text="hum"
+        app:layout_constraintTop_toBottomOf="@id/spacer_wf4"
+        app:layout_constraintStart_toStartOf="parent"
+        android:textSize="11sp"
+        android:gravity="start"
+        android:textColor="#000000" />
+
+    <TextView
+        android:id="@+id/wf_humidity"
+        android:layout_width="290dp"
+        android:layout_height="16dp"
+        android:text=""
+        app:layout_constraintBottom_toBottomOf="@id/wf_humidity_label"
+        app:layout_constraintStart_toEndOf="@id/spacer_wf0"
+        android:textSize="14sp"
+        android:gravity="start"
+        android:textColor="#000000" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

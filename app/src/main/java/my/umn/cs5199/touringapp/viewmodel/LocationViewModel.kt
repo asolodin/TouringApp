@@ -53,11 +53,11 @@ data class Position(
 data class LocationState(
     //all distances in meters, all time in seconds
     val position: Position,
-    val routePoints: List<LatLng>,
+    val rideRoutePoints: List<LatLng>,
     val routePlanPoints: List<LatLng>?,
     val tripStartTime: Long,
-    val tripElapsedTime: Long,
-    val tripDistance: Double,
+    val rideElapsedTime: Long,
+    val rideDistance: Double,
     val maxSpeed: Double,
     val totalDistance: Double,
     val paused: Boolean,
@@ -67,8 +67,12 @@ data class LocationState(
 ) {
 
     fun avgSpeed(): Double {
-        if (tripElapsedTime > 0) {
-            return tripDistance / tripElapsedTime
+        Log.d(
+            "touringApp.avgSpeed",
+            " rideDistance ${rideDistance} / rideElapsedTime ${rideElapsedTime}"
+        )
+        if (rideElapsedTime > 0) {
+            return rideDistance / rideElapsedTime
         }
         return 0.0
     }
@@ -147,8 +151,9 @@ class LocationViewModel : ViewModel() {
                 viewModelScope.launch {
                     val tripPlan = tripPlan.copy(
                         timeStart = tripStartTime,
-                        tripElapsedTime = tripElapsedTime,
-                        tripDistance = tripDistance
+                        tripElapsedTime = rideElapsedTime,
+                        tripDistance = rideDistance,
+                        rideRoutePoints = rideRoutePoints
                     )
                     repo.saveToStorage(context, tripPlan)
                 }
@@ -170,9 +175,10 @@ class LocationViewModel : ViewModel() {
                     currentState.copy(
                         tripPlan = thisTripPlan,
                         totalDistance = thisTripPlan.wayPoints.last().totalDistance,
-                        tripDistance = thisTripPlan.tripDistance,
-                        tripElapsedTime = thisTripPlan.tripElapsedTime,
-                        routePlanPoints = thisTripPlan.routePoints
+                        rideDistance = thisTripPlan.tripDistance,
+                        rideElapsedTime = thisTripPlan.tripElapsedTime,
+                        routePlanPoints = thisTripPlan.planRoutePoints,
+                        rideRoutePoints = thisTripPlan.rideRoutePoints
                     )
                 }
             }
@@ -233,23 +239,23 @@ class LocationViewModel : ViewModel() {
 
         if (tripPaused) {
             Log.d("touringApp.updatePositionState", "trip is auto-paused")
-            routePoints.clear()
+            // routePoints.clear()
         } else {
             routePoints.add(currentPosition.asLatLng())
         }
 
         val tripStartTime = if (tripStarted) firstPosition!!.time else 0
-        val timeDelta = currentPosition.time - prevPosition.time
-        val distDelta = currentPosition.distanceTo(prevPosition)
+        val timeDelta = if (tripPaused) 0 else currentPosition.time - prevPosition.time
+        val distDelta = if (tripPaused) 0.0 else currentPosition.distanceTo(prevPosition)
         val maxSpeed = Math.max(currentPosition.speed, uiState.value.maxSpeed)
 
         _uiState.update { currentState ->
             currentState.copy(
                 position = currentPosition,
-                routePoints = routePoints,
+                rideRoutePoints = routePoints,
                 tripStartTime = tripStartTime,
-                tripElapsedTime = currentState.tripElapsedTime + timeDelta,
-                tripDistance = currentState.tripDistance + distDelta,
+                rideElapsedTime = currentState.rideElapsedTime + timeDelta,
+                rideDistance = currentState.rideDistance + distDelta,
                 maxSpeed = maxSpeed,
                 paused = tripPaused
             )

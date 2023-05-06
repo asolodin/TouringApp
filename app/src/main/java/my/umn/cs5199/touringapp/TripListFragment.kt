@@ -10,8 +10,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.window.OnBackInvokedCallback
-import androidx.activity.addCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
@@ -28,7 +26,7 @@ import my.umn.cs5199.touringapp.repository.TripRepository
 import java.text.SimpleDateFormat
 import java.util.*
 
-class FirstFragment : Fragment() {
+class TripListFragment : Fragment() {
 
     private var _binding: FragmentFirstBinding? = null
     private val permissions = arrayOf(
@@ -42,7 +40,7 @@ class FirstFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
     private lateinit var viewModel: TripListViewModel
-    private lateinit var tripListAdapter: FirstFragment.CustomAdapter
+    private lateinit var tripListAdapter: TripListFragment.CustomAdapter
 
     val multiplePermissionsContract = ActivityResultContracts.RequestMultiplePermissions()
     val multiplePermissionLauncher =
@@ -185,7 +183,7 @@ class FirstFragment : Fragment() {
                 )
             }
             viewHolder.name.setOnClickListener {
-                val intent = Intent(activity, FullscreenActivity::class.java)
+                val intent = Intent(activity, DashboardActivity::class.java)
                 intent.putExtra(
                     Constants.TRIP_FILE_NAME_PROP,
                     TripRepository.toFileName(tripPlan)

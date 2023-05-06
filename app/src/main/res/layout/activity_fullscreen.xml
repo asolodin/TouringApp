@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="?attr/fullscreenBackgroundColor"
     android:theme="@style/ThemeOverlay.TouringApp.FullscreenContainer"
-    tools:context=".FullscreenActivity">
+    tools:context=".DashboardActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,7 +15,7 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="140dp"
             android:background="@drawable/border">
 
             <TextClock

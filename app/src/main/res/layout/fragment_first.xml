@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".FirstFragment">
+    tools:context=".TripListFragment">
 
 
     <LinearLayout
@@ -48,8 +48,7 @@
         android:src="@android:drawable/ic_popup_sync"
         android:background="@drawable/border_semi_background"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/trip_list"

@@ -39,9 +39,10 @@ data class TripPlan(
     val timeStart: Long = 0,
     val tripElapsedTime: Long = 0,
     val tripDistance: Double = 0.0,
-    val timeEnd: Long = 0
+    val timeEnd: Long = 0,
+    val rideRoutePoints: List<LatLng> = listOf()
 ) {
-    val routePoints = wayPoints.stream().flatMap { it.segment.stream() }.toList()
+    val planRoutePoints = wayPoints.stream().flatMap { it.segment.stream() }.toList()
 }
 
 data class TripPlanState(

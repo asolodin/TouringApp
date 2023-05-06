@@ -33,7 +33,7 @@ import my.umn.cs5199.touringapp.Constants.DIR_CODE2
 import my.umn.cs5199.touringapp.Constants.FUN_DIR_TO_ARROW_INDEX
 import my.umn.cs5199.touringapp.Constants.FUN_RELATIVE_WIND_ARROW_INDEX
 import my.umn.cs5199.touringapp.Constants.FUN_WIND_SPEED_TO_COLOR
-import my.umn.cs5199.touringapp.Constants.SPEED_TO_COLOR_CODE
+import my.umn.cs5199.touringapp.Constants.COLOR_CODE
 import my.umn.cs5199.touringapp.databinding.ActivityFullscreenBinding
 import java.text.SimpleDateFormat
 import java.util.*
@@ -42,7 +42,7 @@ import java.util.*
 /**
  *
  */
-class FullscreenActivity : AppCompatActivity() {
+class DashboardActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityFullscreenBinding
     private lateinit var fullscreenContent: TextView
@@ -101,7 +101,7 @@ class FullscreenActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     private fun updateView(state: LocationState) {
 
-        Log.d("touringApp.FullScreen.updateView", "Location is " + state.position)
+        Log.d("touringApp.FullScreen.updateView", "New state " + state)
 
         mapFragment?.getMapAsync {
             it.moveCamera(CameraUpdateFactory.newLatLng(state.position.asLatLng()))
@@ -110,7 +110,7 @@ class FullscreenActivity : AppCompatActivity() {
                     ContextCompat.getColor(applicationContext, R.color.route_actual)
                 )
             )
-            route.points = state.routePoints
+            route.points = state.rideRoutePoints
             if (state.routePlanPoints != null) {
                 val routePlan: Polyline = it.addPolyline(
                     PolylineOptions().color(
@@ -124,7 +124,7 @@ class FullscreenActivity : AppCompatActivity() {
         binding.speed.text = String.format("%02.1f", conversion.speed(state.position.speed))
         binding.speedAvg.text = String.format("%02.1f", conversion.speed(state.avgSpeed()))
         binding.speedMax.text = String.format("%02.1f", conversion.speed(state.maxSpeed))
-        binding.tripDistance.text = String.format("%03.1f", conversion.distance(state.tripDistance))
+        binding.tripDistance.text = String.format("%03.1f", conversion.distance(state.rideDistance))
             .padStart(5, '0')
         binding.tripTotalDistance.text = String.format(
             "%03.1f", conversion.distance(
@@ -135,8 +135,8 @@ class FullscreenActivity : AppCompatActivity() {
 
         binding.tripTime.text = String.format(
             "%02d:%02d",
-            conversion.hours(state.tripElapsedTime),
-            conversion.minutes(state.tripElapsedTime)
+            conversion.hours(state.rideElapsedTime),
+            conversion.minutes(state.rideElapsedTime)
         )
 
         if (state.paused) {
@@ -150,13 +150,13 @@ class FullscreenActivity : AppCompatActivity() {
             binding.speed.clearAnimation()
         }
 
-        if (state.tripStartTime > 0 && state.tripDistance > 0) {
+        if (state.tripStartTime > 0 && state.rideDistance > 0) {
             val now = System.currentTimeMillis() / 1000 // to s
 
             binding.tripStart.text = etaFormat.format(Date(state.tripStartTime * 1000))
                 .dropLast(1)
 
-            val remDist = state.totalDistance - state.tripDistance
+            val remDist = state.totalDistance - state.rideDistance
 
             if (remDist > 0) {
                 if (state.avgSpeed() > 0) {
@@ -167,7 +167,7 @@ class FullscreenActivity : AppCompatActivity() {
                         conversion.minutes(tripEstTime)
                     )
                 }
-                val overallSpeed = state.tripDistance / (now - state.tripStartTime)
+                val overallSpeed = state.rideDistance / (now - state.tripStartTime)
                 val remainTime = (remDist / overallSpeed).toLong()
                 val remainHrs = conversion.hours(remainTime)
 
@@ -212,7 +212,7 @@ class FullscreenActivity : AppCompatActivity() {
         var time = Calendar.getInstance()
         val lastUpdated = if (state.weatherCur?.lastUpdated != null)
             SimpleDateFormat("yyyy-MM-dd HH:mm").parse(state.weatherCur.lastUpdated!!) else
-                Date()
+            Date()
         time.time = lastUpdated
         time.add(Calendar.MINUTE, 15)
         for (i in 0..25) {
@@ -298,10 +298,11 @@ class FullscreenActivity : AppCompatActivity() {
         }
     }
 
-    class WindTimeSeries(v: Pair<Int,Int>, t: Calendar) : TimeSeries<Pair<Int,Int>>(15, 24, v, t) {
+    class WindTimeSeries(v: Pair<Int, Int>, t: Calendar) :
+        TimeSeries<Pair<Int, Int>>(15, 24, v, t) {
 
         @Suppress("DEPRECATION")
-        override fun convert(v: Pair<Int,Int>): CharSequence {
+        override fun convert(v: Pair<Int, Int>): CharSequence {
             val index = FUN_DIR_TO_ARROW_INDEX(v.first)
             val char = DIR_CODE2[index]
             var color = FUN_WIND_SPEED_TO_COLOR(v.second) and 0x00ffffff.toInt()
@@ -316,16 +317,39 @@ class FullscreenActivity : AppCompatActivity() {
         override fun convert(v: Int): CharSequence {
             var color: Int
             if (v > Constants.MAX_TEMP) {
-                color = SPEED_TO_COLOR_CODE.last().toInt()
+                color = COLOR_CODE.last().toInt()
             } else if (v < Constants.MIN_TEMP) {
-                color = SPEED_TO_COLOR_CODE[0].toInt()
+                color = COLOR_CODE[0].toInt()
             } else {
                 val adjutedTemp = v - Constants.MIN_TEMP
                 val tempToRage = (adjutedTemp / Constants.TEMP_RANGE).toInt()
-                color = SPEED_TO_COLOR_CODE[
+                color = COLOR_CODE[
                         Math.min(
                             tempToRage,
-                            SPEED_TO_COLOR_CODE.size - 1
+                            COLOR_CODE.size - 1
+                        )].toInt() and 0x00ffffff.toInt()
+            }
+            val value = Html.fromHtml("<font color='#${Integer.toHexString(color)}'>■</font>")
+            return value
+        }
+    }
+
+    class HumidtyTimeSeries(v: Int, t: Calendar) : TimeSeries<Int>(12, 24, v, t) {
+
+        @Suppress("DEPRECATION")
+        override fun convert(v: Int): CharSequence {
+            var color: Int
+            if (v > Constants.MAX_HUM) {
+                color = COLOR_CODE.last().toInt()
+            } else if (v < Constants.MIN_HUM) {
+                color = COLOR_CODE[0].toInt()
+            } else {
+                val adjutedHumidity = v - Constants.MIN_HUM
+                val humToRage = (adjutedHumidity / Constants.HUM_RANGE).toInt()
+                color = COLOR_CODE[
+                        Math.min(
+                            humToRage,
+                            COLOR_CODE.size - 1
                         )].toInt() and 0x00ffffff.toInt()
             }
             val value = Html.fromHtml("<font color='#${Integer.toHexString(color)}'>■</font>")
@@ -342,8 +366,12 @@ class FullscreenActivity : AppCompatActivity() {
     private fun makeWindTimeSeries(state: LocationState): WindTimeSeries {
         val startTime = Calendar.getInstance()
         startTime.time = Date(state.weatherCur!!.lastUpdatedEpoch * 1000L)
-        return WindTimeSeries(Pair(state.weatherCur.windDegree,
-            state.weatherCur.windMph.toInt()), startTime)
+        return WindTimeSeries(
+            Pair(
+                state.weatherCur.windDegree,
+                state.weatherCur.windMph.toInt()
+            ), startTime
+        )
     }
 
     private fun makeTempTimeSeries(state: LocationState): TempTimeSeries {
@@ -358,6 +386,12 @@ class FullscreenActivity : AppCompatActivity() {
         return TempTimeSeries(state.weatherCur.feelslikeF.toInt(), startTime)
     }
 
+    private fun makeHumidityTimeSeries(state: LocationState): HumidtyTimeSeries {
+        val startTime = Calendar.getInstance()
+        startTime.time = Date(state.weatherCur!!.lastUpdatedEpoch * 1000L)
+        return HumidtyTimeSeries(state.weatherCur.humidity, startTime)
+    }
+
     private fun updateForcastWeather(state: LocationState) {
         val current = state.weatherCur ?: return
         val forcast = state.weatherFor ?: return
@@ -366,6 +400,7 @@ class FullscreenActivity : AppCompatActivity() {
         val wind = makeWindTimeSeries(state)
         val temp = makeTempTimeSeries(state)
         val feels = makeFeelsTimeSeries(state)
+        val hum = makeHumidityTimeSeries(state)
 
         val startTime = current.lastUpdatedEpoch
         val hours = forcast.forecastday[0].hour.iterator()
@@ -385,6 +420,8 @@ class FullscreenActivity : AppCompatActivity() {
                 wind.add(time, Pair(hour.windDegree, hour.windMph.toInt()))
                 temp.add(time, hour.tempF.toInt())
                 feels.add(time, hour.feelslikeF.toInt())
+                hum.add(time, hour.humidity)
+
                 if (hours.hasNext()) {
                     hour = hours.next()
                 } else {
@@ -396,6 +433,7 @@ class FullscreenActivity : AppCompatActivity() {
         binding.includeWeatherLayout.wfWind.text = wind.toSpanned()
         binding.includeWeatherLayout.wfTemp.text = temp.toSpanned()
         binding.includeWeatherLayout.wfFeels.text = feels.toSpanned()
+        binding.includeWeatherLayout.wfHumidity.text = hum.toSpanned()
     }
 
 

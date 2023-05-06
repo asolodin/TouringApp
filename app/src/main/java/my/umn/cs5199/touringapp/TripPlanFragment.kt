@@ -28,7 +28,7 @@ import my.umn.cs5199.touringapp.databinding.FragmentSecondBinding
 /**
  *
  */
-class SecondFragment : Fragment() {
+class TripPlanFragment : Fragment() {
 
     private var _binding: FragmentSecondBinding? = null
     private var mapFragment: SupportMapFragment? = null
@@ -68,7 +68,7 @@ class SecondFragment : Fragment() {
         binding.tripPlanRide.setOnClickListener {
             viewModelTripPlan.setTripPlanName(binding.tripPlanName.text.toString())
             viewModelTripPlan.saveTripPlan(requireContext()) {
-                val intent = Intent(activity, FullscreenActivity::class.java)
+                val intent = Intent(activity, DashboardActivity::class.java)
                 intent.putExtra(Constants.TRIP_FILE_NAME_PROP, it)
                 startActivity(intent)
             }
@@ -135,13 +135,14 @@ class SecondFragment : Fragment() {
             }
         }
     }
-/*
-    override fun onStop() {
-        viewModelTripPlan.setTripPlanName(binding.tripPlanName.text.toString())
-        viewModelTripPlan.saveTripPlan(requireContext()) {}
-        super.onStop()
-    }
-*/
+
+    /*
+        override fun onStop() {
+            viewModelTripPlan.setTripPlanName(binding.tripPlanName.text.toString())
+            viewModelTripPlan.saveTripPlan(requireContext()) {}
+            super.onStop()
+        }
+    */
     override fun onPause() {
         viewModelTripPlan.setTripPlanName(binding.tripPlanName.text.toString())
         viewModelTripPlan.saveTripPlan(requireContext()) {}

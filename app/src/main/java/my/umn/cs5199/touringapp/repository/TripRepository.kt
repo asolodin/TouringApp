@@ -69,7 +69,8 @@ class TripRepository {
             if (context.filesDir.exists()) {
                 lock.withLock {
                     tripPlans = files.filter { it.endsWith(Constants.FILE_EXT) }
-                        .mapNotNull { adapter.fromJson(File(context.filesDir, it).readText()) }.toList()
+                        .mapNotNull { adapter.fromJson(File(context.filesDir, it).readText()) }
+                        .toList()
                 }
             } else {
                 Log.w("touringApp.loadFromStorage", "Dir " + context.filesDir + " doesn't exist")

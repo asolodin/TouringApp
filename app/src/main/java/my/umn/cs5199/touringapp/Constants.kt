@@ -34,14 +34,18 @@ object Constants {
     val FUN_RELATIVE_WIND_ARROW_INDEX: (Int, Int) -> Int =
         { w: Int, b: Int -> if (w - b < 0) 8 + w - b else w - b }
 
-    val SPEED_TO_COLOR_CODE = arrayOf(
+    val COLOR_CODE = arrayOf(
         0xFF00CC00, 0xFF33CC33, 0xFF66FF33, 0xFF99FF33, 0xFFCCFF33, 0xFFFFFF00,
         0xFFFFCC00, 0xFFFF9933, 0xFFFF9900, 0xFFFF6600, 0xFFFF3300, 0xFFFF0000
     )
 
     const val MAX_TEMP = 100
     const val MIN_TEMP = 50
-    val TEMP_RANGE = (MAX_TEMP - MIN_TEMP).toFloat() / SPEED_TO_COLOR_CODE.size
+    val TEMP_RANGE = (MAX_TEMP - MIN_TEMP).toFloat() / COLOR_CODE.size
+
+    const val MAX_HUM = 100
+    const val MIN_HUM = 35
+    val HUM_RANGE = (MAX_HUM - MIN_HUM).toFloat() / COLOR_CODE.size
 
     const val COVER_CODE = "▢▤▦▩■"
     const val DIR_CODE = "⬇⬋⬅⬉⬆⬈➡⬊"
@@ -50,12 +54,12 @@ object Constants {
     val FUN_WIND_SPEED_TO_COLOR: (Int) -> Int = { s: Int ->
         val min = 5
         val max = 24
-        val range = (max - min).toFloat() / SPEED_TO_COLOR_CODE.size
+        val range = (max - min).toFloat() / COLOR_CODE.size
         val speed = Math.max(Math.min(s, max), min)
         val index = Math.min(
             (speed / range).toInt(),
-            SPEED_TO_COLOR_CODE.size - 1
+            COLOR_CODE.size - 1
         )
-        SPEED_TO_COLOR_CODE[index].toInt()
+        COLOR_CODE[index].toInt()
     }
 }
