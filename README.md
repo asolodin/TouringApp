@@ -1,5 +1,7 @@
 # Bike Touring App
 
+![App](docs/assets/final_project.pdf-image-006.jpg)
+
 ## Motivation
 
 Bike touring is a type of travel by bicycle, typically on less traveled or unpaved roads. Bike 
